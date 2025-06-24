@@ -1,0 +1,12 @@
+{
+  "name": "ppc",
+  "version": "1.0.0",
+  "main": "pet-biometric-storage.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
