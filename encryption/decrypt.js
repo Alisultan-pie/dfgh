@@ -20,9 +20,19 @@ function decryptFile(inputPath, outputPath) {
   const input = fs.createReadStream(inputPath);
   const output = fs.createWriteStream(outputPath);
 
+  input.on('error', (err) => {
+    console.error('❌ Input file read error:', err.message);
+  });
+  output.on('error', (err) => {
+    console.error('❌ Output file write error:', err.message);
+  });
+  decipher.on('error', (err) => {
+    console.error('❌ Decryption error:', err.message);
+  });
+
   input.pipe(decipher).pipe(output);
 
-  output.on('finish', () => {
+  output.on('close', () => {
     console.log('✅ Decrypted image saved at:', outputPath);
   });
 }
