@@ -1,16 +1,18 @@
-// Backend orchestration: encrypt, upload to IPFS, log to blockchain
+// backend/index.js
+
 const path = require('path');
 const fs = require('fs');
-const uploadToIPFS = require('../ipfs/upload');
+// note: adjust this if you used `module.exports = uploadEncryptedImage`
+const { uploadEncryptedImage } = require('../ipfs/upload');
 const { ethers } = require('ethers');
 
 // === CONFIGURATION ===
-const PET_ID = 'pet123'; // Example Pet ID
-const ENCRYPTED_IMAGE_PATH = path.join(__dirname, '..', 'nose_encrypted.jpg');
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || 'YOUR_CONTRACT_ADDRESS';
-const CONTRACT_ABI = require('./PetStorageABI.json'); // Place ABI JSON in backend/
-const PROVIDER_URL = process.env.PROVIDER_URL || 'https://rpc-mumbai.maticvigil.com';
-const PRIVATE_KEY = process.env.PRIVATE_KEY || 'YOUR_WALLET_PRIVATE_KEY';
+const PET_ID = 'pet123';
+const ENCRYPTED_IMAGE_PATH = path.join(__dirname, '..', 'encryption', 'nose_encrypted.jpg');
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
+const CONTRACT_ABI = require('./PetStorageABI.json');
+const PROVIDER_URL = process.env.PROVIDER_URL;
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 async function logToBlockchain(petId, cid, timestamp) {
   const provider = new ethers.JsonRpcProvider(PROVIDER_URL);
@@ -23,14 +25,14 @@ async function logToBlockchain(petId, cid, timestamp) {
 }
 
 async function main() {
-  // 1. Check encrypted image exists
+  // 1. Ensure encryption already ran
   if (!fs.existsSync(ENCRYPTED_IMAGE_PATH)) {
-    console.error('❌ Encrypted image not found. Please run encryption first.');
+    console.error('❌ Encrypted image not found. Run the encryption script first.');
     return;
   }
 
   // 2. Upload to IPFS
-  const cid = await uploadToIPFS(ENCRYPTED_IMAGE_PATH);
+  const cid = await uploadEncryptedImage(ENCRYPTED_IMAGE_PATH);
   const timestamp = Math.floor(Date.now() / 1000);
 
   // 3. Log to blockchain
