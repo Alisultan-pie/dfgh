@@ -1,26 +1,30 @@
-// IPFS upload logic using Web3.Storage
-const { Web3Storage, getFilesFromPath } = require('web3.storage');
+// ipfs/upload.js
+const { W3upClient } = require('@web3-storage/w3up-client');
+const fs = require('fs');
 const path = require('path');
+require('dotenv').config();
 
-// TODO: Set your Web3.Storage API token here
-const WEB3STORAGE_TOKEN = process.env.WEB3STORAGE_TOKEN || 'YOUR_WEB3STORAGE_API_TOKEN';
+// initialize the client with your token
+const client = new W3upClient({ token: process.env.WEB3STORAGE_TOKEN });
 
-if (WEB3STORAGE_TOKEN === 'YOUR_WEB3STORAGE_API_TOKEN') {
-  console.warn('⚠️  Please set your Web3.Storage API token in WEB3STORAGE_TOKEN or as an environment variable.');
+/**
+ * Uploads a single file to Web3.Storage (IPFS) and returns its CID.
+ * @param {string} filePath  Absolute or relative path to the file.
+ * @returns {Promise<string>}  The CID of the uploaded file.
+ */
+async function uploadEncryptedImage(filePath) {
+  // read the encrypted file into memory
+  const fullPath = path.isAbsolute(filePath)
+    ? filePath
+    : path.join(__dirname, filePath);
+
+  const data = fs.readFileSync(fullPath);
+  const files = [{ name: path.basename(fullPath), data }];
+
+  // put() returns the CID
+  const cid = await client.put(files, { wrapWithDirectory: false });
+  console.log('🚀 Uploaded to IPFS, CID:', cid);
+  return cid;
 }
 
-const client = new Web3Storage({ token: WEB3STORAGE_TOKEN });
-
-async function uploadToIPFS(filePath) {
-  try {
-    const files = await getFilesFromPath(filePath);
-    const cid = await client.put(files);
-    console.log(`✅ Uploaded to IPFS. CID: ${cid}`);
-    return cid;
-  } catch (err) {
-    console.error('❌ IPFS upload failed:', err.message);
-    throw err;
-  }
-}
-
-module.exports = uploadToIPFS;
+module.exports = { uploadEncryptedImage };
