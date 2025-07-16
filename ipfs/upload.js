@@ -13,18 +13,26 @@ const client = new W3upClient({ token: process.env.WEB3STORAGE_TOKEN });
  * @returns {Promise<string>}  The CID of the uploaded file.
  */
 async function uploadEncryptedImage(filePath) {
-  // read the encrypted file into memory
-  const fullPath = path.isAbsolute(filePath)
-    ? filePath
-    : path.join(__dirname, filePath);
+  try {
+    // read the encrypted file into memory
+    const fullPath = path.isAbsolute(filePath)
+      ? filePath
+      : path.join(__dirname, filePath);
 
-  const data = fs.readFileSync(fullPath);
-  const files = [{ name: path.basename(fullPath), data }];
+    if (!fs.existsSync(fullPath)) {
+      throw new Error('File does not exist: ' + fullPath);
+    }
+    const data = fs.readFileSync(fullPath);
+    const files = [{ name: path.basename(fullPath), data }];
 
-  // put() returns the CID
-  const cid = await client.put(files, { wrapWithDirectory: false });
-  console.log('🚀 Uploaded to IPFS, CID:', cid);
-  return cid;
+    // put() returns the CID
+    const cid = await client.put(files, { wrapWithDirectory: false });
+    console.log('🚀 Uploaded to IPFS, CID:', cid);
+    return cid;
+  } catch (err) {
+    console.error('❌ IPFS upload error:', err.message);
+    throw err;
+  }
 }
 
 module.exports = { uploadEncryptedImage };
