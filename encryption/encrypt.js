@@ -65,4 +65,8 @@ function encryptFile(inputPath, outputPath, keyPath) {
 }
 
 // === RUN SCRIPT ===
-encryptFile(inputFilePath, outputFilePath, keyOutputPath);
+try {
+  encryptFile(inputFilePath, outputFilePath, keyOutputPath);
+} catch (err) {
+  console.error('❌ Unexpected encryption error:', err.message);
+}

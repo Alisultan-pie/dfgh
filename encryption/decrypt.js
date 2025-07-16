@@ -37,5 +37,13 @@ function decryptFile(inputPath, outputPath) {
   });
 }
 
-// Run it
-decryptFile(encryptedFilePath, decryptedOutputPath);
+if (key.length !== 32 || iv.length !== 16) {
+  console.error('❌ Invalid key or IV length. Key must be 32 bytes, IV must be 16 bytes.');
+  process.exit(1);
+}
+
+try {
+  decryptFile(encryptedFilePath, decryptedOutputPath);
+} catch (err) {
+  console.error('❌ Unexpected decryption error:', err.message);
+}
