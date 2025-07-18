@@ -35,3 +35,9 @@ This project is a prototype to securely encrypt and store pet biometric data (e.
 
 ```bash
 node encryption/encrypt.js
+
+```
+
+## Automated Folder Watcher
+
+Run `npm run watch` to start the watcher. Drop a file named `petId.png` into `./incoming` and the pipeline (encrypt → IPFS → Polygon) runs automatically.

@@ -1,38 +1,46 @@
 // ipfs/upload.js
-const { W3upClient } = require('@web3-storage/w3up-client');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
+import fs from "fs";
+import path from "path";
+import { Web3Storage, File } from "web3.storage";
+import dotenv from "dotenv";
+dotenv.config();
 
-// initialize the client with your token
-const client = new W3upClient({ token: process.env.WEB3STORAGE_TOKEN });
+const token = process.env.WEB3STORAGE_TOKEN;
+if (!token) {
+  console.error("🚨 Missing WEB3STORAGE_TOKEN in .env");
+  process.exit(1);
+}
+
+const client = new Web3Storage({ token });
 
 /**
  * Uploads a single file to Web3.Storage (IPFS) and returns its CID.
- * @param {string} filePath  Absolute or relative path to the file.
- * @returns {Promise<string>}  The CID of the uploaded file.
+ *
+ * @param {string} filePath  - Path to the file to upload (e.g. encrypted.bin)
+ * @returns {Promise<string>} - The resulting CID
  */
-async function uploadEncryptedImage(filePath) {
-  try {
-    // read the encrypted file into memory
-    const fullPath = path.isAbsolute(filePath)
-      ? filePath
-      : path.join(__dirname, filePath);
-
-    if (!fs.existsSync(fullPath)) {
-      throw new Error('File does not exist: ' + fullPath);
-    }
-    const data = fs.readFileSync(fullPath);
-    const files = [{ name: path.basename(fullPath), data }];
-
-    // put() returns the CID
-    const cid = await client.put(files, { wrapWithDirectory: false });
-    console.log('🚀 Uploaded to IPFS, CID:', cid);
-    return cid;
-  } catch (err) {
-    console.error('❌ IPFS upload error:', err.message);
-    throw err;
+export async function uploadEncryptedImage(filePath) {
+  const abs = path.isAbsolute(filePath) ? filePath : path.join(process.cwd(), filePath);
+  if (!fs.existsSync(abs)) {
+    throw new Error("File does not exist: " + abs);
   }
+  const data  = await fs.promises.readFile(abs);
+  const files = [ new File([data], path.basename(abs)) ];
+  const cid   = await client.put(files, { wrapWithDirectory: false });
+  console.log(`✅ Uploaded ${abs} → CID: ${cid}`);
+  return cid;
 }
 
-module.exports = { uploadEncryptedImage };
+// If you want to run this file directly:
+// node ipfs/upload.js <path/to/encrypted.bin>
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const filePath = process.argv[2];
+  if (!filePath) {
+    console.error("Usage: node upload.js <path/to/encrypted.bin>");
+    process.exit(1);
+  }
+  uploadEncryptedImage(filePath).catch(err => {
+    console.error("❌ Upload failed:", err);
+    process.exit(1);
+  });
+}
