@@ -15,27 +15,13 @@ const encryptedFilePath = path.join(__dirname, '..', 'nose_encrypted.jpg'); // i
 const decryptedOutputPath = path.join(__dirname, '..', 'nose_decrypted.jpg'); // output
 
 // === DECRYPTION FUNCTION ===
-function decryptFile(inputPath, outputPath) {
+function decryptFileStream(inputPath, key, iv) {
   const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
   const input = fs.createReadStream(inputPath);
-  const output = fs.createWriteStream(outputPath);
-
-  input.on('error', (err) => {
-    console.error('❌ Input file read error:', err.message);
-  });
-  output.on('error', (err) => {
-    console.error('❌ Output file write error:', err.message);
-  });
-  decipher.on('error', (err) => {
-    console.error('❌ Decryption error:', err.message);
-  });
-
-  input.pipe(decipher).pipe(output);
-
-  output.on('close', () => {
-    console.log('✅ Decrypted image saved at:', outputPath);
-  });
+  return input.pipe(decipher);
 }
+
+module.exports = { decryptFileStream };
 
 if (key.length !== 32 || iv.length !== 16) {
   console.error('❌ Invalid key or IV length. Key must be 32 bytes, IV must be 16 bytes.');

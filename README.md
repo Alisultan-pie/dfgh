@@ -41,3 +41,47 @@ node encryption/encrypt.js
 ## Automated Folder Watcher
 
 Run `npm run watch` to start the watcher. Drop a file named `petId.png` into `./incoming` and the pipeline (encrypt → IPFS → Polygon) runs automatically.
+
+## 🛠️ Amoy Network Setup
+
+1. Add Polygon Amoy testnet to MetaMask:
+   - RPC: https://rpc-amoy.polygon.technology
+   - Chain ID: 80002
+   - Currency: POL
+2. Get test POL from the Amoy faucet.
+3. In `hardhat.config.js`, set:
+   ```js
+   networks: {
+     amoy: {
+       url: process.env.PROVIDER_URL,
+       accounts: [process.env.PRIVATE_KEY]
+     }
+   }
+   ```
+
+## 🔑 Web3.Storage Auth (JWT vs Storacha/UCAN)
+
+- **Legacy JWT:**
+  - Get your token from https://web3.storage/tokens
+  - Add to `.env`:
+    ```
+    WEB3STORAGE_TOKEN=your-jwt-token
+    UPLOAD_AUTH_METHOD=jwt
+    ```
+- **Storacha/UCAN:**
+  - Get a UCAN token (see Storacha docs or your org admin)
+  - Add to `.env`:
+    ```
+    UCAN_TOKEN=your-ucan-token
+    UPLOAD_AUTH_METHOD=ucan
+    ```
+
+## .env Example
+```
+PROVIDER_URL=https://rpc-amoy.polygon.technology
+PRIVATE_KEY=your-private-key
+CONTRACT_ADDRESS=your-contract-address
+WEB3STORAGE_TOKEN=your-jwt-token
+UCAN_TOKEN=your-ucan-token
+UPLOAD_AUTH_METHOD=jwt
+```

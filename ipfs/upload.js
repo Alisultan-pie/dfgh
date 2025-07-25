@@ -11,7 +11,24 @@ if (!token) {
   process.exit(1);
 }
 
-const client = new Web3Storage({ token });
+const uploadMethod = process.env.UPLOAD_AUTH_METHOD || "jwt"; // "jwt" or "ucan"
+
+const ucanToken = process.env.UCAN_TOKEN;
+
+let client;
+if (uploadMethod === "jwt") {
+  client = new Web3Storage({ token });
+} else if (uploadMethod === "ucan") {
+  if (!ucanToken) {
+    console.error("UCAN upload method selected, but UCAN_TOKEN is missing in .env");
+    process.exit(1);
+  }
+  client = new Web3Storage({ token: ucanToken });
+  console.log("Using UCAN/Storacha authentication for Web3.Storage uploads.");
+} else {
+  console.error("Unknown UPLOAD_AUTH_METHOD: " + uploadMethod);
+  process.exit(1);
+}
 
 /**
  * Uploads a single file to Web3.Storage (IPFS) and returns its CID.
