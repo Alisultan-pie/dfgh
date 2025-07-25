@@ -5,8 +5,8 @@ const hre = require("hardhat");
 async function main() {
   // compile & get the factory
   const PetStorage = await hre.ethers.getContractFactory("PetStorage");
-  // deploy
-  const petStorage = await PetStorage.deploy();
+  // deploy with custom gas limit to avoid out-of-gas errors
+  const petStorage = await PetStorage.deploy({ gasLimit: 6000000 });
   // wait until it’s mined
   await petStorage.deployed();
 
