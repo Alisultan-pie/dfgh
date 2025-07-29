@@ -9,6 +9,9 @@ This project is a prototype to securely encrypt and store pet biometric data (e.
 - [x] AES-256 encryption script completed (`encryption/encrypt.js`)
 - [x] Encrypted image is generated and saved
 - [x] Key and IV are stored in a secure text file for future decryption
+- [x] Basic smart contract deployed on Polygon Amoy testnet
+- [x] IPFS upload via Web3.Storage functional
+- [x] Backend script can encrypt → upload → store on-chain
 
 ## 🔐 Encryption Details
 
@@ -20,27 +23,23 @@ This project is a prototype to securely encrypt and store pet biometric data (e.
 ## 🗂️ Folder Structure
 
 /encryption → AES-256 encryption logic
-/ipfs → Will handle IPFS upload logic
+/ipfs → IPFS upload logic (currently Web3.Storage)
 /contracts → Solidity smart contract for blockchain storage
-/backend → (Optional) Backend API to connect MongoDB, blockchain, etc.
+/backend → Backend API to connect MongoDB, blockchain, etc.
 
 ## 📌 To Do Next
 
-- Upload encrypted image to IPFS
-- Save IPFS hash and metadata on the Polygon blockchain
-- Write and deploy Solidity smart contract
-- Integrate everything into a working prototype
+- [ ] Add unit tests for contract functions
+- [ ] Create Express API routes for web access
+- [ ] Integrate Storacha/UCAN authentication
+- [ ] Add comprehensive error handling
+- [ ] Complete documentation
 
 ## 🧪 Run the encryption script
 
 ```bash
 node encryption/encrypt.js
-
 ```
-
-## Automated Folder Watcher
-
-Run `npm run watch` to start the watcher. Drop a file named `petId.png` into `./incoming` and the pipeline (encrypt → IPFS → Polygon) runs automatically.
 
 ## 🛠️ Amoy Network Setup
 
@@ -49,39 +48,20 @@ Run `npm run watch` to start the watcher. Drop a file named `petId.png` into `./
    - Chain ID: 80002
    - Currency: POL
 2. Get test POL from the Amoy faucet.
-3. In `hardhat.config.js`, set:
-   ```js
-   networks: {
-     amoy: {
-       url: process.env.PROVIDER_URL,
-       accounts: [process.env.PRIVATE_KEY]
-     }
-   }
+3. Set up your `.env` file with:
+   ```
+   PROVIDER_URL=https://rpc-amoy.polygon.technology
+   PRIVATE_KEY=your-private-key
+   CONTRACT_ADDRESS=your-deployed-contract-address
+   WEB3STORAGE_TOKEN=your-web3-storage-token
    ```
 
-## 🔑 Web3.Storage Auth (JWT vs Storacha/UCAN)
+## Automated Folder Watcher
 
-- **Legacy JWT:**
-  - Get your token from https://web3.storage/tokens
-  - Add to `.env`:
-    ```
-    WEB3STORAGE_TOKEN=your-jwt-token
-    UPLOAD_AUTH_METHOD=jwt
-    ```
-- **Storacha/UCAN:**
-  - Get a UCAN token (see Storacha docs or your org admin)
-  - Add to `.env`:
-    ```
-    UCAN_TOKEN=your-ucan-token
-    UPLOAD_AUTH_METHOD=ucan
-    ```
+Run `npm run watch` to start the watcher. Drop a file named `petId.png` into `./incoming` and the pipeline (encrypt → IPFS → Polygon) runs automatically.
 
-## .env Example
-```
-PROVIDER_URL=https://rpc-amoy.polygon.technology
-PRIVATE_KEY=your-private-key
-CONTRACT_ADDRESS=your-contract-address
-WEB3STORAGE_TOKEN=your-jwt-token
-UCAN_TOKEN=your-ucan-token
-UPLOAD_AUTH_METHOD=jwt
-```
+## Current Working Demo
+
+1. Encrypt an image: `node encryption/encrypt.js <input> <output> <keyfile>`
+2. Upload to IPFS: `node ipfs/upload.js <encrypted-file>`
+3. Run backend script: `node backend/index.js` (uploads, stores on-chain, saves to MongoDB)
