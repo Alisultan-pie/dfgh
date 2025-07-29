@@ -9,6 +9,9 @@ const { MongoClient } = require('mongodb');
 require('dotenv').config();
 const crypto = require('crypto');
 const { Web3Storage } = require('web3.storage');
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
 
 // === CONFIGURATION ===
 const PET_ID = 'pet123';
@@ -92,6 +95,49 @@ async function getPetFromMongoDB(petId) {
   }
 }
 
+function getKeyIvForFile(petId, keyLogPath = path.join(__dirname, '..', 'encryption', 'keys.txt')) {
+  const log = fs.readFileSync(keyLogPath, 'utf-8');
+  const records = log.split(/\n\n+/);
+  for (const rec of records) {
+    if (rec.includes(`File: ${petId}`)) {
+      const keyMatch = rec.match(/Key:\s+([a-fA-F0-9]+)/);
+      const ivMatch = rec.match(/IV:\s+([a-fA-F0-9]+)/);
+      if (keyMatch && ivMatch) {
+        return { key: Buffer.from(keyMatch[1], 'hex'), iv: Buffer.from(ivMatch[1], 'hex') };
+      }
+    }
+  }
+  throw new Error('Key/IV not found for petId: ' + petId);
+}
+
+function decryptFileStream(inputPath, key, iv) {
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+  const input = fs.createReadStream(inputPath);
+  return input.pipe(decipher);
+}
+
+app.get('/download/:petId', async (req, res) => {
+  try {
+    const petId = req.params.petId;
+    // 1. Get CID from blockchain
+    const provider = new ethers.JsonRpcProvider(PROVIDER_URL);
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+    const cid = await contract.getPetData(petId);
+    if (!cid) return res.status(404).send('No CID found for petId');
+    // 2. Download encrypted file from IPFS
+    const tmpPath = path.join(__dirname, '..', 'tmp', `${petId}.bin`);
+    await downloadFromIPFS(cid, tmpPath);
+    // 3. Get key/iv
+    const { key, iv } = getKeyIvForFile(petId);
+    // 4. Decrypt and stream
+    res.setHeader('Content-Type', 'image/jpeg');
+    decryptFileStream(tmpPath, key, iv).pipe(res);
+  } catch (err) {
+    console.error('Download error:', err);
+    res.status(500).send('Failed to retrieve and decrypt image');
+  }
+});
+
 async function main() {
   // 1. Ensure encryption already ran
   if (!fs.existsSync(ENCRYPTED_IMAGE_PATH)) {
@@ -129,6 +175,7 @@ async function main() {
 }
 
 if (require.main === module) {
+  app.listen(PORT, () => console.log(`Express server running on port ${PORT}`));
   main().catch(err => {
     console.error('❌ Backend process failed:', err);
   });

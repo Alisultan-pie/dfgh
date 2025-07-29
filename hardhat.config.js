@@ -6,7 +6,10 @@ module.exports = {
   networks: {
     amoy: {
       url: process.env.PROVIDER_URL,
-      accounts: [process.env.PRIVATE_KEY]
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 80002,
+      // You can set a custom gas limit if you encounter errors:
+      // gas: 6000000
     }
   }
 };
