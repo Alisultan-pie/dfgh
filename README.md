@@ -10,8 +10,9 @@ This project is a prototype to securely encrypt and store pet biometric data (e.
 - [x] Encrypted image is generated and saved
 - [x] Key and IV are stored in a secure text file for future decryption
 - [x] Basic smart contract deployed on Polygon Amoy testnet
-- [x] IPFS upload via Web3.Storage functional
+- [x] IPFS upload via Storacha/UCAN functional
 - [x] Backend script can encrypt → upload → store on-chain
+- [x] Storacha integration completed with UCAN authentication
 
 ## 🔐 Encryption Details
 
@@ -23,7 +24,7 @@ This project is a prototype to securely encrypt and store pet biometric data (e.
 ## 🗂️ Folder Structure
 
 /encryption → AES-256 encryption logic
-/ipfs → IPFS upload logic (currently Web3.Storage)
+/ipfs → IPFS upload logic (Storacha/UCAN primary, Web3.Storage fallback)
 /contracts → Solidity smart contract for blockchain storage
 /backend → Backend API to connect MongoDB, blockchain, etc.
 
@@ -31,7 +32,6 @@ This project is a prototype to securely encrypt and store pet biometric data (e.
 
 - [ ] Add unit tests for contract functions
 - [ ] Create Express API routes for web access
-- [ ] Integrate Storacha/UCAN authentication
 - [ ] Add comprehensive error handling
 - [ ] Complete documentation
 
@@ -53,8 +53,26 @@ node encryption/encrypt.js
    PROVIDER_URL=https://rpc-amoy.polygon.technology
    PRIVATE_KEY=your-private-key
    CONTRACT_ADDRESS=your-deployed-contract-address
-   WEB3STORAGE_TOKEN=your-web3-storage-token
+   UCAN_TOKEN=your-storacha-ucan-token
+   UPLOAD_AUTH_METHOD=storacha
    ```
+
+## 🔑 IPFS Upload Authentication
+
+- **Storacha/UCAN (Default):**
+  - Get your UCAN token from your Storacha organization
+  - Add to `.env`:
+    ```
+    UCAN_TOKEN=your-ucan-token
+    UPLOAD_AUTH_METHOD=storacha
+    ```
+- **Web3.Storage JWT (Fallback):**
+  - Get your token from https://web3.storage/tokens
+  - Add to `.env`:
+    ```
+    WEB3STORAGE_TOKEN=your-jwt-token
+    UPLOAD_AUTH_METHOD=jwt
+    ```
 
 ## Automated Folder Watcher
 
@@ -64,4 +82,4 @@ Run `npm run watch` to start the watcher. Drop a file named `petId.png` into `./
 
 1. Encrypt an image: `node encryption/encrypt.js <input> <output> <keyfile>`
 2. Upload to IPFS: `node ipfs/upload.js <encrypted-file>`
-3. Run backend script: `node backend/index.js` (uploads, stores on-chain, saves to MongoDB)
+3. Run backend script: `node backend/index.js` (uploads via Storacha, stores on-chain, saves to MongoDB)

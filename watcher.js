@@ -1,4 +1,4 @@
-// watcher.js – auto-encrypt, upload to Web3.Storage & store CID on-chain
+// watcher.js – auto-encrypt, upload to Storacha & store CID on-chain
 import chokidar from "chokidar";
 import path from "path";
 import dotenv from "dotenv";
@@ -27,7 +27,7 @@ async function processFile(filePath) {
     // 1) encrypt
     await encryptImage(filePath, encOut, KEY_LOG);
 
-    // 2) upload → IPFS
+    // 2) upload → IPFS via Storacha
     const cid = await uploadEncryptedImage(encOut);
 
     // 3) store CID on-chain

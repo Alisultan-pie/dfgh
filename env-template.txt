@@ -1,0 +1,16 @@
+# Blockchain Configuration
+PROVIDER_URL=https://polygon-amoy.infura.io/v3/33eec0a080aa42e7bca1b21850a88c73
+PRIVATE_KEY=0x639d3b510b42a5ddac314be575d18ff06d199499bec4ed9c1ff83f53dcec72d7
+CONTRACT_ADDRESS=0x22Be8Bffc52FDC8037CA237Ea19D0D62f1dC47ce
+
+# IPFS Configuration (Storacha Only)
+UPLOAD_AUTH_METHOD=storacha
+UCAN_TOKEN=PASTE_YOUR_UCAN_TOKEN_HERE
+
+# MongoDB Configuration (Optional)
+MONGODB_URI=mongodb://localhost:27017/ppc
+
+# Server Ports
+PORT=3001
+
+# Note: Replace PASTE_YOUR_UCAN_TOKEN_HERE with your actual UCAN token 

@@ -1,37 +1,38 @@
 // ipfs/upload.js
 import fs from "fs";
 import path from "path";
-import { Web3Storage, File } from "web3.storage";
+import { Client } from "@web3-storage/w3up-client";
+import { File } from "web3.storage";
 import dotenv from "dotenv";
 dotenv.config();
 
-const token = process.env.WEB3STORAGE_TOKEN;
-if (!token) {
-  console.error("🚨 Missing WEB3STORAGE_TOKEN in .env");
-  process.exit(1);
-}
-
-const uploadMethod = process.env.UPLOAD_AUTH_METHOD || "jwt"; // "jwt" or "ucan"
-
+const uploadMethod = "storacha"; // Always use Storacha
 const ucanToken = process.env.UCAN_TOKEN;
 
 let client;
-if (uploadMethod === "jwt") {
-  client = new Web3Storage({ token });
-} else if (uploadMethod === "ucan") {
-  if (!ucanToken) {
-    console.error("UCAN upload method selected, but UCAN_TOKEN is missing in .env");
-    process.exit(1);
-  }
-  client = new Web3Storage({ token: ucanToken });
-  console.log("Using UCAN/Storacha authentication for Web3.Storage uploads.");
-} else {
-  console.error("Unknown UPLOAD_AUTH_METHOD: " + uploadMethod);
+let isStoracha = false;
+
+if (!ucanToken) {
+  console.error("🚨 UCAN_TOKEN is missing in .env");
+  console.log("💡 Please add your UCAN_TOKEN to the .env file");
+  process.exit(1);
+}
+
+try {
+  client = new Client();
+  // Initialize with UCAN token using the correct API
+  await client.login(ucanToken);
+  isStoracha = true;
+  console.log("✅ Using Storacha/UCAN authentication for IPFS uploads");
+} catch (error) {
+  console.error("❌ Failed to initialize Storacha client:", error.message);
+  console.log("💡 Please check your UCAN_TOKEN is valid");
+  console.log("💡 You may need to get a new token from https://console.web3.storage/");
   process.exit(1);
 }
 
 /**
- * Uploads a single file to Web3.Storage (IPFS) and returns its CID.
+ * Uploads a single file to IPFS and returns its CID.
  *
  * @param {string} filePath  - Path to the file to upload (e.g. encrypted.bin)
  * @returns {Promise<string>} - The resulting CID
@@ -41,11 +42,57 @@ export async function uploadEncryptedImage(filePath) {
   if (!fs.existsSync(abs)) {
     throw new Error("File does not exist: " + abs);
   }
-  const data  = await fs.promises.readFile(abs);
-  const files = [ new File([data], path.basename(abs)) ];
-  const cid   = await client.put(files, { wrapWithDirectory: false });
-  console.log(`✅ Uploaded ${abs} → CID: ${cid}`);
-  return cid;
+  
+  try {
+    const data = await fs.promises.readFile(abs);
+    const file = new File([data], path.basename(abs));
+    
+    let cid;
+    if (isStoracha) {
+      // Upload via Storacha
+      cid = await client.uploadFile(file);
+    } else {
+      // Upload via Web3.Storage
+      const files = [file];
+      cid = await client.put(files, { wrapWithDirectory: false });
+    }
+    
+    console.log(`✅ Uploaded ${abs} → CID: ${cid}`);
+    return cid;
+  } catch (error) {
+    console.error("❌ Upload failed:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Downloads a file from IPFS.
+ *
+ * @param {string} cid  - The CID of the file to download
+ * @param {string} outputPath  - Where to save the downloaded file
+ */
+export async function downloadFromIPFS(cid, outputPath) {
+  try {
+    let file;
+    if (isStoracha) {
+      file = await client.get(cid);
+    } else {
+      const res = await client.get(cid);
+      const files = await res.files();
+      file = files[0];
+    }
+    
+    if (!file) {
+      throw new Error("No response from IPFS for CID: " + cid);
+    }
+    
+    const data = await file.arrayBuffer();
+    await fs.promises.writeFile(outputPath, Buffer.from(data));
+    console.log("📁 File downloaded from IPFS →", outputPath);
+  } catch (error) {
+    console.error("❌ Download failed:", error.message);
+    throw error;
+  }
 }
 
 // If you want to run this file directly:

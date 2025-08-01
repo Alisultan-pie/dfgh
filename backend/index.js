@@ -3,12 +3,11 @@
 const path = require('path');
 const fs = require('fs');
 // note: adjust this if you used `module.exports = uploadEncryptedImage`
-const { uploadEncryptedImage } = require('../ipfs/upload');
+const { uploadEncryptedImage, downloadFromIPFS } = require('../ipfs/upload');
 const { ethers } = require('ethers');
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 const crypto = require('crypto');
-const { Web3Storage } = require('web3.storage');
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,8 +19,6 @@ const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 const CONTRACT_ABI = require('./PetStorageABI.json');
 const PROVIDER_URL = process.env.PROVIDER_URL;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const WEB3STORAGE_TOKEN = process.env.WEB3STORAGE_TOKEN;
-const web3Client = new Web3Storage({ token: WEB3STORAGE_TOKEN });
 
 async function logToBlockchain(petId, cid, timestamp) {
   const provider = new ethers.JsonRpcProvider(PROVIDER_URL);
@@ -51,18 +48,6 @@ async function saveToMongoDB(petId, cid, timestamp) {
   } finally {
     await client.close();
   }
-}
-
-async function downloadFromIPFS(cid, outputPath) {
-  const res = await web3Client.get(cid);
-  if (!res) throw new Error('No response from IPFS for CID: ' + cid);
-  const files = await res.files();
-  if (!files.length) throw new Error('No files found in IPFS response for CID: ' + cid);
-  const file = files[0];
-  const stream = fs.createWriteStream(outputPath);
-  stream.write(Buffer.from(await file.arrayBuffer()));
-  stream.close();
-  console.log('📁 File downloaded from IPFS →', outputPath);
 }
 
 function computeFileHash(filePath) {
@@ -149,7 +134,7 @@ async function main() {
   const originalHash = computeFileHash(ENCRYPTED_IMAGE_PATH);
   console.log('🔑 SHA-256 hash before IPFS upload:', originalHash);
 
-  // 2. Upload to IPFS
+  // 2. Upload to IPFS (now using Storacha by default)
   const cid = await uploadEncryptedImage(ENCRYPTED_IMAGE_PATH);
   const timestamp = Math.floor(Date.now() / 1000);
 
