@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
 import { PawPrint, Mail, Lock, User, Loader2, AlertCircle, CheckCircle, Info, Play, Shield, Heart, Cloud, FileText, Users, Star } from 'lucide-react';
 import { useAuth } from './AuthContext';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 export function AuthModal() {
   const [isLoading, setIsLoading] = useState(false);

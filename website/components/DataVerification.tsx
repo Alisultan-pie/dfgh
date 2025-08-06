@@ -9,7 +9,7 @@ import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Search, CheckCircle, AlertTriangle, Shield, Hash, Download, RefreshCw, Loader2, FileCheck } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface VerificationResult {
   id: string;

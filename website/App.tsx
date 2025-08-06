@@ -3,17 +3,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { Button } from './components/ui/button';
 import { Badge } from './components/ui/badge';
-import { PetUpload } from './components/PetUpload';
-import { BlockchainTracker } from './components/BlockchainTracker';
-import { DataVerification } from './components/DataVerification';
-import { AdminPanel } from './components/AdminPanel';
-import { AuthModal } from './components/AuthModal';
-import { WelcomeOnboarding } from './components/WelcomeOnboarding';
-import { AuthProvider, useAuth } from './components/AuthContext';
-import { BlockchainIntegration } from './components/BlockchainIntegration';
-import { Heart, FileCheck, Shield, Settings, PawPrint, LogOut, Wifi, WifiOff, Info, Github, BookOpen, AlertTriangle, CheckCircle, Users, Star, Cloud } from 'lucide-react';
-import { apiClient } from './utils/supabase/client';
-import { toast } from 'sonner@2.0.3';
+// import { PetUpload } from './components/PetUpload';
+// import { BlockchainTracker } from './components/BlockchainTracker';
+// import { DataVerification } from './components/DataVerification';
+// import { AdminPanel } from './components/AdminPanel';
+// import { AuthModal } from './components/AuthModal';
+// import { WelcomeOnboarding } from './components/WelcomeOnboarding';
+// import { AuthProvider, useAuth } from './components/AuthContext';
+// import { BlockchainIntegration } from './components/BlockchainIntegration';
+import { Heart, FileCheck, Shield, Settings, LogOut, Wifi, WifiOff, Info, Github, BookOpen, AlertTriangle, CheckCircle, Users, Star, Cloud, Circle } from 'lucide-react';
+// import { apiClient } from './utils/supabase/client';
+// import { toast } from 'sonner';
+
+// Temporary toast function for demo
+const toast = {
+  info: (message: string, options?: any) => console.log('TOAST INFO:', message, options),
+  success: (message: string, options?: any) => console.log('TOAST SUCCESS:', message, options),
+  error: (message: string, options?: any) => console.log('TOAST ERROR:', message, options)
+};
+
+// Temporary mock data
+const mockStats = {
+  totalPets: 24,
+  totalTransactions: 24,
+  confirmedTransactions: 22,
+  pendingTransactions: 2,
+  totalVerifications: 20,
+  validVerifications: 18,
+  successRate: 90
+};
 
 interface DashboardStats {
   totalPets: number;
@@ -26,218 +44,54 @@ interface DashboardStats {
 }
 
 function Dashboard() {
-  const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('upload');
   const [isOnline, setIsOnline] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalPets: 0,
-    totalTransactions: 0,
-    confirmedTransactions: 0,
-    pendingTransactions: 0,
-    totalVerifications: 0,
-    validVerifications: 0,
-    successRate: 0
-  });
-
-  // Use refs to track previous connectivity state to avoid stale closures
-  const prevIsOnlineRef = useRef(true);
-  const hasShownOfflineToastRef = useRef(false);
-
-  const fetchStats = useCallback(async () => {
-    if (!user) return;
-    
-    setIsLoadingStats(true);
-    try {
-      // This will never throw an error now - it always returns valid stats
-      const { stats: fetchedStats } = await apiClient.getStats();
-      setStats(fetchedStats);
-      
-      // Show onboarding for new users (no pets uploaded yet)
-      if (fetchedStats.totalPets === 0) {
-        const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
-        if (!hasSeenOnboarding) {
-          setShowOnboarding(true);
-        }
-      }
-    } catch (error) {
-      // This should rarely happen now, but just in case
-      console.error('Unexpected stats error:', error);
-      
-      // Show onboarding for new users even if stats fail
-      const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
-      if (!hasSeenOnboarding) {
-        setShowOnboarding(true);
-      }
-    } finally {
-      setIsLoadingStats(false);
-    }
-  }, [user]);
-
-  const checkConnectivity = useCallback(async () => {
-    try {
-      const online = await apiClient.isOnline();
-      const prevIsOnline = prevIsOnlineRef.current;
-      
-      setIsOnline(online);
-      setIsOfflineMode(!online);
-      prevIsOnlineRef.current = online;
-      
-      // Show notifications for connectivity changes
-      if (!online && prevIsOnline && !hasShownOfflineToastRef.current) {
-        // Going offline
-        toast.info('Working offline', {
-          description: 'Pet data will be uploaded to IPFS & blockchain when reconnected'
-        });
-        hasShownOfflineToastRef.current = true;
-      } else if (online && !prevIsOnline) {
-        // Coming back online
-        toast.success('Back online', {
-          description: 'Now syncing with IPFS and blockchain network'
-        });
-        hasShownOfflineToastRef.current = false; // Reset so we can show offline toast again
-      }
-    } catch (error) {
-      console.log('Connectivity check failed');
-      setIsOnline(false);
-      setIsOfflineMode(true);
-      prevIsOnlineRef.current = false;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-
-    // Initial data fetch and connectivity check
-    fetchStats();
-    checkConnectivity();
-    
-    // Set up periodic checks - less frequent to avoid spam
-    const interval = setInterval(() => {
-      checkConnectivity();
-      // Only fetch stats if we're online to avoid unnecessary processing
-      if (isOnline) {
-        fetchStats();
-      }
-    }, 60000); // Check every 60 seconds instead of 30
-    
-    return () => clearInterval(interval);
-  }, [user, fetchStats, checkConnectivity, isOnline]);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [stats, setStats] = useState<DashboardStats>(mockStats);
 
   const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast.success('See you next time! 👋');
-    } catch (error) {
-      console.error('Sign out error:', error);
-      toast.error('Error signing out');
-    }
+    console.log('Sign out clicked');
   };
 
-  const refreshStats = async () => {
-    setIsLoadingStats(true);
-    try {
-      // Always fetch stats first
-      const { stats: fetchedStats } = await apiClient.getStats();
-      setStats(fetchedStats);
-      
-      // Then check connectivity
-      await checkConnectivity();
-      
-      if (isOnline) {
-        toast.success('Connected successfully');
-      } else {
-        toast.info('Still offline', {
-          description: 'Using local cache - will sync with IPFS when online'
-        });
-      }
-    } catch (error) {
-      console.error('Error refreshing stats:', error);
-      setIsOnline(false);
-      setIsOfflineMode(true);
-      prevIsOnlineRef.current = false;
-      toast.error('Connection failed', {
-        description: 'Continuing in offline mode'
-      });
-    } finally {
-      setIsLoadingStats(false);
-    }
+  const handleRefreshWithCallback = () => {
+    console.log('Refresh stats');
   };
 
   const handleCloseOnboarding = () => {
     setShowOnboarding(false);
-    localStorage.setItem('hasSeenOnboarding', 'true');
   };
 
   const handleStartUpload = () => {
-    setShowOnboarding(false);
-    localStorage.setItem('hasSeenOnboarding', 'true');
     setActiveTab('upload');
+    setShowOnboarding(false);
   };
-
-  const handleRefreshWithCallback = useCallback(() => {
-    refreshStats();
-  }, []);
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+      <header className="border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Heart className="h-6 w-6 text-cyan-600" />
                 <div>
-                  <h1 className="text-2xl font-medium text-cyan-500">Pet Pet Club</h1>
-                  <p className="text-sm text-muted-foreground">Digital Pet ID & Community</p>
+                  <h1 className="text-xl font-bold text-foreground">Pet Pet Club</h1>
+                  <p className="text-xs text-muted-foreground">Digital ID System</p>
                 </div>
-              </div>
-              
-              <div className="hidden md:flex items-center gap-2">
-                <Badge variant="outline" className="text-xs border-cyan-200 text-cyan-700">
-                  <Users className="h-3 w-3 mr-1" />
-                  Smart Care
-                </Badge>
-                <Badge variant="outline" className="text-xs border-cyan-200 text-cyan-700">
-                  <Shield className="h-3 w-3 mr-1" />
-                  Blockchain Secured
-                </Badge>
-                <Badge variant="outline" className="text-xs border-cyan-200 text-cyan-700">
-                  <Cloud className="h-3 w-3 mr-1" />
-                  IPFS Storage
-                </Badge>
               </div>
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-3">
-                <Button variant="ghost" size="sm" onClick={() => setShowOnboarding(true)}>
-                  <Info className="h-4 w-4 mr-2" />
-                  Learn More
-                </Button>
-                <Button variant="ghost" size="sm" asChild>
-                  <a href="https://petpetclub.com.hk/" target="_blank" rel="noopener noreferrer">
-                    <Heart className="h-4 w-4 mr-2" />
-                    Visit Pet Pet Club
-                  </a>
-                </Button>
-                <Button variant="ghost" size="sm" asChild>
-                  <a href="https://github.com/Alisultan-pie/PPC_Blockchain.git" target="_blank" rel="noopener noreferrer">
-                    <Github className="h-4 w-4 mr-2" />
-                    Tech Details
-                  </a>
-                </Button>
-              </div>
-              
               <div className="flex items-center gap-2">
                 {isOnline ? (
-                  <Wifi className="h-4 w-4 text-green-500" title="Online - Connected to IPFS & Blockchain" />
+                  <Wifi className="h-4 w-4 text-green-500" />
                 ) : (
-                  <WifiOff className="h-4 w-4 text-orange-500" title="Offline - Will sync to IPFS when connected" />
+                  <WifiOff className="h-4 w-4 text-orange-500" />
                 )}
                 <div className="text-sm text-muted-foreground">
-                  {user?.user_metadata?.name || user?.email}
+                  Demo User
                 </div>
               </div>
               
@@ -277,7 +131,7 @@ function Dashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">My Beloved Pets</CardTitle>
-              <PawPrint className="h-4 w-4 text-cyan-500" />
+              <Circle className="h-4 w-4 text-cyan-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -332,115 +186,27 @@ function Dashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Care Quality</CardTitle>
-              <Star className="h-4 w-4 text-yellow-500" />
+              <CardTitle className="text-sm font-medium">Data Verification</CardTitle>
+              <Shield className="h-4 w-4 text-purple-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {isLoadingStats ? '...' : `${stats.successRate}%`}
+                {isLoadingStats ? '...' : stats.totalVerifications}
               </div>
-              <p className="text-xs text-muted-foreground">smart care score</p>
+              <p className="text-xs text-muted-foreground">integrity checks completed</p>
               {stats.totalVerifications > 0 && (
-                <Badge variant="outline" className="mt-2 text-xs border-yellow-200 text-yellow-700">
-                  {stats.validVerifications} perfect verifications
+                <Badge variant="outline" className="mt-2 text-xs border-purple-200 text-purple-700">
+                  {stats.validVerifications} verified successfully
                 </Badge>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Offline Mode Notice */}
-        {isOfflineMode && !isLoadingStats && (
-          <div className="mb-6">
-            <Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-orange-800 dark:text-orange-200">
-                      Working Offline - Using Local Cache
-                    </h3>
-                    <p className="text-sm text-orange-700 dark:text-orange-300">
-                      Your pet's information is temporarily stored locally with AES-256 encryption. 
-                      When you reconnect to the internet, everything will be automatically uploaded to 
-                      IPFS (decentralized storage) and logged on the Polygon blockchain for permanent, 
-                      tamper-proof protection. All features continue to work perfectly!
-                    </p>
-                    <div className="flex gap-2 mt-3">
-                      <Button 
-                        size="sm" 
-                        onClick={refreshStats}
-                        variant="outline"
-                        disabled={isLoadingStats}
-                        className="border-orange-300 text-orange-700 hover:bg-orange-100"
-                      >
-                        <Wifi className="h-4 w-4 mr-2" />
-                        {isLoadingStats ? 'Checking...' : 'Reconnect to IPFS'}
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setActiveTab('upload')}
-                        className="border-orange-300 text-orange-700 hover:bg-orange-100"
-                      >
-                        <PawPrint className="h-4 w-4 mr-2" />
-                        Continue Adding Pets
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* New User Welcome Message */}
-        {stats.totalPets === 0 && !showOnboarding && !isLoadingStats && (
-          <div className="mb-6">
-            <Card className="border-cyan-200 bg-cyan-50 dark:border-cyan-800 dark:bg-cyan-950">
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-3">
-                  <Heart className="h-5 w-5 text-cyan-600 mt-0.5" />
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-cyan-800 dark:text-cyan-200">
-                      Welcome to Pet Pet Club! 🐾
-                    </h3>
-                    <p className="text-sm text-cyan-700 dark:text-cyan-300">
-                      Care made smart. Love made strong. Join our community where we use advanced blockchain 
-                      technology and IPFS decentralized storage to keep your pet's information secure forever. 
-                      Create encrypted digital memories with military-grade AES-256 security and permanent 
-                      blockchain records on the Polygon network.
-                    </p>
-                    <div className="flex gap-2 mt-3">
-                      <Button 
-                        size="sm" 
-                        onClick={() => setActiveTab('upload')}
-                        className="bg-cyan-600 hover:bg-cyan-700"
-                      >
-                        <PawPrint className="h-4 w-4 mr-2" />
-                        Add My First Pet
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setShowOnboarding(true)}
-                        className="border-cyan-300 text-cyan-700 hover:bg-cyan-100"
-                      >
-                        <BookOpen className="h-4 w-4 mr-2" />
-                        Learn About Blockchain Storage
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="upload" className="flex items-center gap-2">
-              <PawPrint className="h-4 w-4" />
+              <Circle className="h-4 w-4" />
               Add Pet
             </TabsTrigger>
             <TabsTrigger value="blockchain-integration" className="flex items-center gap-2">
@@ -462,66 +228,171 @@ function Dashboard() {
           </TabsList>
 
           <TabsContent value="upload">
-            <PetUpload onUploadComplete={handleRefreshWithCallback} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Pet Upload System</CardTitle>
+                <CardDescription>
+                  Upload your pet's biometric data with AES-256 encryption and IPFS storage
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Circle className="h-12 w-12 text-cyan-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Pet Upload Feature</h3>
+                  <p className="text-muted-foreground mb-4">
+                    This feature allows you to upload pet photos with military-grade encryption
+                    and store them on the decentralized IPFS network with blockchain verification.
+                  </p>
+                  <Button>
+                    <Circle className="h-4 w-4 mr-2" />
+                    Upload Pet Photo
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="blockchain-integration">
-            <BlockchainIntegration onUploadComplete={handleRefreshWithCallback} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Blockchain Integration</CardTitle>
+                <CardDescription>
+                  Real-time blockchain transaction monitoring and IPFS integration
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Shield className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Blockchain Integration</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Monitor real-time blockchain transactions on Polygon network
+                    and track IPFS storage with decentralized verification.
+                  </p>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">24</div>
+                      <div className="text-muted-foreground">Total Transactions</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">22</div>
+                      <div className="text-muted-foreground">Confirmed</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-600">2</div>
+                      <div className="text-muted-foreground">Pending</div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="blockchain">
-            <BlockchainTracker />
+            <Card>
+              <CardHeader>
+                <CardTitle>Blockchain Records</CardTitle>
+                <CardDescription>
+                  View all blockchain transactions and IPFS storage records
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <FileCheck className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Transaction Records</h3>
+                  <p className="text-muted-foreground mb-4">
+                    View detailed blockchain transaction history with IPFS CID references
+                    and verification status for all uploaded pet data.
+                  </p>
+                  <div className="space-y-2 text-left">
+                    <div className="p-3 border rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">PET001</span>
+                        <Badge variant="outline" className="text-green-600">Confirmed</Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        CID: QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="verification">
-            <DataVerification />
+            <Card>
+              <CardHeader>
+                <CardTitle>Data Verification</CardTitle>
+                <CardDescription>
+                  Verify data integrity and hash verification
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <CheckCircle className="h-12 w-12 text-purple-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Data Verification</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Verify the integrity of stored pet data using SHA-256 hashing
+                    and blockchain verification to ensure data authenticity.
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">20</div>
+                      <div className="text-muted-foreground">Total Verifications</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">18</div>
+                      <div className="text-muted-foreground">Valid</div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="admin">
-            <AdminPanel />
+            <Card>
+              <CardHeader>
+                <CardTitle>Admin Panel</CardTitle>
+                <CardDescription>
+                  System configuration and monitoring
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Settings className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Admin Panel</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Configure system settings, monitor error logs, and manage
+                    access controls for the pet biometric storage system.
+                  </p>
+                  <div className="space-y-2 text-left">
+                    <div className="p-3 border rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">System Status</span>
+                        <Badge variant="outline" className="text-green-600">Online</Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        All systems operational - Blockchain and IPFS connected
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
-
-      {/* Onboarding Modal */}
-      {showOnboarding && (
-        <WelcomeOnboarding 
-          onClose={handleCloseOnboarding}
-          onStartUpload={handleStartUpload}
-        />
-      )}
     </div>
   );
 }
 
 function AppContent() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <PawPrint className="h-12 w-12 text-cyan-500 mx-auto mb-4 animate-pulse" />
-          <div className="space-y-2">
-            <p className="text-muted-foreground">Loading Pet Pet Club...</p>
-            <p className="text-xs text-muted-foreground">Care made smart. Love made strong. 💙</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <AuthModal />;
-  }
-
   return <Dashboard />;
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <AppContent />
   );
 }
