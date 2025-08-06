@@ -1,4 +1,4 @@
-import { expect } from "chai";
+const { expect } = require("chai");
 
 describe("Functional Tests - Complete Pet Upload Pipeline", function () {
   
@@ -29,7 +29,7 @@ describe("Functional Tests - Complete Pet Upload Pipeline", function () {
       ];
       
       testCases.forEach(testCase => {
-        const isValid = testCase.file.type.match(/^image\/(jpeg|png|jpg)$/) && 
+        const isValid = testCase.file.type.match(/^image\/(jpeg|png|jpg)$/) !== null && 
                        testCase.file.size <= 10 * 1024 * 1024;
         expect(isValid).to.equal(testCase.expected);
       });
