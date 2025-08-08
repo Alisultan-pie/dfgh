@@ -16,6 +16,16 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-button.active {
+            border-bottom-color: #06b6d4;
+            color: #06b6d4;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -101,25 +111,26 @@
         <div class="bg-white rounded-xl shadow-lg overflow-hidden">
             <div class="border-b border-gray-200">
                 <nav class="flex">
-                    <button class="flex-1 px-6 py-4 text-center border-b-2 border-cyan-500 text-cyan-600 font-medium">
+                    <button class="tab-button flex-1 px-6 py-4 text-center border-b-2 border-cyan-500 text-cyan-600 font-medium active" onclick="showTab('upload')">
                         🐾 Add Pet
                     </button>
-                    <button class="flex-1 px-6 py-4 text-center text-gray-600 hover:text-gray-800">
+                    <button class="tab-button flex-1 px-6 py-4 text-center text-gray-600 hover:text-gray-800" onclick="showTab('blockchain')">
                         🔗 Blockchain
                     </button>
-                    <button class="flex-1 px-6 py-4 text-center text-gray-600 hover:text-gray-800">
+                    <button class="tab-button flex-1 px-6 py-4 text-center text-gray-600 hover:text-gray-800" onclick="showTab('records')">
                         📋 Records
                     </button>
-                    <button class="flex-1 px-6 py-4 text-center text-gray-600 hover:text-gray-800">
+                    <button class="tab-button flex-1 px-6 py-4 text-center text-gray-600 hover:text-gray-800" onclick="showTab('verification')">
                         ✅ Verify Pet
                     </button>
-                    <button class="flex-1 px-6 py-4 text-center text-gray-600 hover:text-gray-800">
+                    <button class="tab-button flex-1 px-6 py-4 text-center text-gray-600 hover:text-gray-800" onclick="showTab('admin')">
                         ⚙️ My Account
                     </button>
                 </nav>
             </div>
 
-            <div class="p-8">
+            <!-- Upload Tab -->
+            <div id="upload" class="tab-content active p-8">
                 <div class="text-center">
                     <div class="w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-6">
                         <span class="text-3xl">🐾</span>
@@ -149,8 +160,148 @@
                         </div>
                     </div>
 
-                    <button class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-8 py-3 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300 font-semibold">
+                    <button onclick="uploadPet()" class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-8 py-3 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300 font-semibold">
                         🐾 Upload Pet Photo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Blockchain Tab -->
+            <div id="blockchain" class="tab-content p-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-3xl">🔗</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Blockchain Integration</h2>
+                    <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
+                        Monitor real-time blockchain transactions on Polygon network and track IPFS storage with 
+                        decentralized verification. All pet data is permanently recorded on the blockchain.
+                    </p>
+                    
+                    <div class="grid grid-cols-3 gap-6 mb-8">
+                        <div class="text-center p-4 bg-green-50 rounded-lg">
+                            <div class="text-3xl font-bold text-green-600 mb-2">24</div>
+                            <div class="text-sm text-gray-600">Total Transactions</div>
+                        </div>
+                        <div class="text-center p-4 bg-blue-50 rounded-lg">
+                            <div class="text-3xl font-bold text-blue-600 mb-2">22</div>
+                            <div class="text-sm text-gray-600">Confirmed</div>
+                        </div>
+                        <div class="text-center p-4 bg-orange-50 rounded-lg">
+                            <div class="text-3xl font-bold text-orange-600 mb-2">2</div>
+                            <div class="text-sm text-gray-600">Pending</div>
+                        </div>
+                    </div>
+
+                    <button onclick="showTransaction()" class="bg-gradient-to-r from-green-500 to-blue-500 text-white px-8 py-3 rounded-lg hover:from-green-600 hover:to-blue-600 transition-all duration-300 font-semibold">
+                        🔗 View Latest Transaction
+                    </button>
+                </div>
+            </div>
+
+            <!-- Records Tab -->
+            <div id="records" class="tab-content p-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-3xl">📋</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Transaction Records</h2>
+                    <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
+                        View detailed blockchain transaction history with IPFS CID references and verification 
+                        status for all uploaded pet data.
+                    </p>
+                    
+                    <div class="space-y-4 text-left max-w-2xl mx-auto">
+                        <div class="p-4 border rounded-lg bg-gray-50">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-medium">PET001 - Max (Golden Retriever)</span>
+                                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs">Confirmed</span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                CID: QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG
+                            </div>
+                        </div>
+                        <div class="p-4 border rounded-lg bg-gray-50">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-medium">PET002 - Luna (Persian Cat)</span>
+                                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs">Confirmed</span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                CID: QmZ9tXpLm3K8vN2qR5sT7uW1xY4aB6cD9eF0gH2iJ3kL4mN
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="refreshRecords()" class="mt-6 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all duration-300 font-semibold">
+                        🔄 Refresh Records
+                    </button>
+                </div>
+            </div>
+
+            <!-- Verification Tab -->
+            <div id="verification" class="tab-content p-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-3xl">✅</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Data Verification</h2>
+                    <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
+                        Verify the integrity of stored pet data using SHA-256 hashing and blockchain verification 
+                        to ensure data authenticity.
+                    </p>
+                    
+                    <div class="grid grid-cols-2 gap-6 mb-8">
+                        <div class="text-center p-4 bg-purple-50 rounded-lg">
+                            <div class="text-3xl font-bold text-purple-600 mb-2">20</div>
+                            <div class="text-sm text-gray-600">Total Verifications</div>
+                        </div>
+                        <div class="text-center p-4 bg-green-50 rounded-lg">
+                            <div class="text-3xl font-bold text-green-600 mb-2">18</div>
+                            <div class="text-sm text-gray-600">Valid</div>
+                        </div>
+                    </div>
+
+                    <button onclick="verifyData()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 font-semibold">
+                        ✅ Verify Data Integrity
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Tab -->
+            <div id="admin" class="tab-content p-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-3xl">⚙️</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Admin Panel</h2>
+                    <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
+                        Configure system settings, monitor error logs, and manage access controls for the 
+                        pet biometric storage system.
+                    </p>
+                    
+                    <div class="space-y-4 text-left max-w-2xl mx-auto">
+                        <div class="p-4 border rounded-lg bg-gray-50">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-medium">System Status</span>
+                                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs">Online</span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                All systems operational - Blockchain and IPFS connected
+                            </div>
+                        </div>
+                        <div class="p-4 border rounded-lg bg-gray-50">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-medium">Encryption Status</span>
+                                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs">Active</span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                AES-256 encryption enabled for all pet data
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="checkSystem()" class="mt-6 bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3 rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300 font-semibold">
+                        🔧 System Check
                     </button>
                 </div>
             </div>
@@ -220,5 +371,43 @@
             <p class="text-sm text-gray-500 mt-4">Powered by Blockchain & IPFS Technology</p>
         </div>
     </footer>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all tab buttons
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => button.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        function uploadPet() {
+            alert('🐾 Pet upload simulation!\n\nThis would:\n1. Encrypt the pet photo with AES-256\n2. Upload to IPFS decentralized storage\n3. Log transaction on Polygon blockchain\n4. Verify data integrity\n\n✅ Upload completed successfully!');
+        }
+
+        function showTransaction() {
+            alert('🔗 Latest Blockchain Transaction:\n\nPet ID: PET024\nTransaction Hash: 0x7a8b9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b\nBlock Number: 4,567,890\nStatus: Confirmed ✅\nGas Used: 45,678\n\nData permanently stored on Polygon network!');
+        }
+
+        function refreshRecords() {
+            alert('📋 Records refreshed!\n\nUpdated transaction count: 24\nNew confirmations: 2\nIPFS storage: All files verified ✅\n\nAll pet data is securely stored and accessible!');
+        }
+
+        function verifyData() {
+            alert('✅ Data Verification Complete!\n\nVerification Results:\n• 20 files checked\n• 18 verified successfully ✅\n• 2 pending verification\n• All hashes match blockchain records\n\nData integrity confirmed! 🛡️');
+        }
+
+        function checkSystem() {
+            alert('🔧 System Check Results:\n\n✅ Blockchain Connection: Active\n✅ IPFS Storage: Online\n✅ Encryption: AES-256 Active\n✅ Smart Contracts: Deployed\n✅ Database: Connected\n\nAll systems operational! 🚀');
+        }
+    </script>
 </body>
 </html> 
