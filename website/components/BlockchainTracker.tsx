@@ -32,7 +32,7 @@ interface NetworkStats {
 export function BlockchainTracker() {
   const [transactions, setTransactions] = useState<BlockchainTransaction[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [networkStats, setNetworkStats] = useState<NetworkStats>({
+  const [networkStats] = useState<NetworkStats>({
     totalTransactions: 24,
     confirmedTransactions: 22,
     pendingTransactions: 2,

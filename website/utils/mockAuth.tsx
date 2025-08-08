@@ -81,7 +81,7 @@ export const mockAuth = {
     return authState.user;
   },
 
-  onAuthStateChange(callback: (event: string, session: { user: User | null } | null) => void) {
+  onAuthStateChange(_callback: (event: string, session: { user: User | null } | null) => void) {
     // Return a mock subscription
     return {
       data: {

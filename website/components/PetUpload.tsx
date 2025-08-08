@@ -82,13 +82,13 @@ export function PetUpload({ onUploadComplete }: PetUploadProps) {
     return { encryptedData, key, iv };
   };
 
-  const simulateIpfsUpload = async (encryptedData: string): Promise<string> => {
+  const simulateIpfsUpload = async (_encryptedData: string): Promise<string> => {
     // Simulate IPFS upload via Web3.Storage
     await new Promise(resolve => setTimeout(resolve, 2000));
     return `Qm${Math.random().toString(36).substr(2, 44)}`;
   };
 
-  const simulateBlockchainLog = async (petId: string, cid: string): Promise<string> => {
+  const simulateBlockchainLog = async (_petId: string, _cid: string): Promise<string> => {
     // Simulate blockchain transaction
     await new Promise(resolve => setTimeout(resolve, 2500));
     return `0x${Math.random().toString(16).substr(2, 64)}`;
@@ -152,7 +152,7 @@ export function PetUpload({ onUploadComplete }: PetUploadProps) {
 
       // Step 2: Encryption
       updateStepStatus('encryption', 'processing');
-      const { encryptedData, key, iv } = await simulateEncryption(file);
+      const { encryptedData, key } = await simulateEncryption(file);
       setEncryptionKey(key);
       updateStepStatus('encryption', 'completed', `Key: ${key.substr(0, 20)}...`);
       setCurrentStep(2);
@@ -334,7 +334,7 @@ export function PetUpload({ onUploadComplete }: PetUploadProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {steps.map((step, index) => (
+              {steps.map((step) => (
                 <div key={step.id} className="flex items-start gap-3">
                   <div className="flex-shrink-0 mt-1">
                     {getStepIcon(step.status)}

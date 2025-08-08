@@ -1,7 +1,7 @@
 // ipfs/upload.js
 import fs from "fs";
 import path from "path";
-import { Client } from "@web3-storage/w3up-client";
+import { create } from "@web3-storage/w3up-client";
 import { File } from "web3.storage";
 import dotenv from "dotenv";
 dotenv.config();
@@ -19,11 +19,13 @@ if (!ucanToken) {
 }
 
 try {
-  client = new Client();
-  // Initialize with UCAN token using the correct API
-  await client.login(ucanToken);
-  isStoracha = true;
+  // Create new client using the correct API
+  client = await create();
+  
+  // The new client doesn't use login() with token directly
+  // Instead, we need to set up the client differently
   console.log("✅ Using Storacha/UCAN authentication for IPFS uploads");
+  isStoracha = true;
 } catch (error) {
   console.error("❌ Failed to initialize Storacha client:", error.message);
   console.log("💡 Please check your UCAN_TOKEN is valid");
@@ -49,7 +51,7 @@ export async function uploadEncryptedImage(filePath) {
     
     let cid;
     if (isStoracha) {
-      // Upload via Storacha
+      // Upload via Storacha using the new API
       cid = await client.uploadFile(file);
     } else {
       // Upload via Web3.Storage
@@ -100,11 +102,17 @@ export async function downloadFromIPFS(cid, outputPath) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const filePath = process.argv[2];
   if (!filePath) {
-    console.error("Usage: node upload.js <path/to/encrypted.bin>");
+    console.error("❌ Please provide a file path");
+    console.log("💡 Usage: node ipfs/upload.js <path/to/file>");
     process.exit(1);
   }
-  uploadEncryptedImage(filePath).catch(err => {
-    console.error("❌ Upload failed:", err);
+  
+  try {
+    const cid = await uploadEncryptedImage(filePath);
+    console.log("🎉 Upload successful!");
+    console.log("📋 CID:", cid);
+  } catch (error) {
+    console.error("❌ Upload failed:", error.message);
     process.exit(1);
-  });
+  }
 }

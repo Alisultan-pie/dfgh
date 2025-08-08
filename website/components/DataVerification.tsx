@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from './ui/alert';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Search, CheckCircle, AlertTriangle, Shield, Hash, Download, RefreshCw, Loader2, FileCheck } from 'lucide-react';
+import { Search, CheckCircle, AlertTriangle, Shield, Hash, RefreshCw, Loader2, FileCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface VerificationResult {
@@ -461,7 +461,7 @@ export function DataVerification() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <code className="text-xs">{truncateHash(result.cid, 15, 6)}</code>
+                        <code className="text-xs">{truncateHash(result.cid, 15)}</code>
                       </TableCell>
                       <TableCell className="text-sm">
                         {formatFileSize(result.fileSize)}

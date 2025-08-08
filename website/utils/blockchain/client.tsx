@@ -1,8 +1,8 @@
-import { ethers } from 'ethers';
+
 import { projectId, publicAnonKey } from '../supabase/info';
 
 // Mock Supabase client for now - we'll integrate this properly later
-const createClient = (url: string, key: string) => ({
+const createClient = (_url: string, _key: string) => ({
   auth: {
     getSession: async () => ({ data: { session: null } })
   }
@@ -10,9 +10,6 @@ const createClient = (url: string, key: string) => ({
 
 // Blockchain configuration
 const BLOCKCHAIN_API_URL = process.env.REACT_APP_BLOCKCHAIN_API_URL || 'http://localhost:3001';
-const CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS;
-const PROVIDER_URL = process.env.REACT_APP_PROVIDER_URL;
-const PRIVATE_KEY = process.env.REACT_APP_PRIVATE_KEY;
 
 // Supabase client for user management
 const supabaseUrl = `https://${projectId}.supabase.co`;
@@ -21,20 +18,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // IPFS and Blockchain integration
 export class BlockchainClient {
-  private provider: any;
-  private contract: any = null;
-  private wallet: any = null;
-
   constructor() {
-    if (PROVIDER_URL) {
-      // For ethers v6, we'll use a simpler approach
-      this.provider = { url: PROVIDER_URL };
-      if (CONTRACT_ADDRESS && PRIVATE_KEY) {
-        this.wallet = { privateKey: PRIVATE_KEY, provider: this.provider };
-        // Note: Contract ABI would need to be imported or defined here
-        // this.contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, this.wallet);
-      }
-    }
+    // Initialize blockchain client
+    // Note: Contract ABI would need to be imported or defined here
+    // this.contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, this.wallet);
   }
 
   // Upload file to IPFS
@@ -204,7 +191,7 @@ export const enhancedApiClient = {
   // ... existing methods from the original apiClient
   async request(endpoint: string, options: RequestInit = {}) {
     try {
-      const session = await supabase.auth.getSession();
+
       
       const headers = {
         'Content-Type': 'application/json',
@@ -362,21 +349,7 @@ export const enhancedApiClient = {
   },
 };
 
-// Fallback data for when APIs are unavailable
-const fallbackData = {
-  stats: {
-    totalPets: 0,
-    totalTransactions: 0,
-    confirmedTransactions: 0,
-    pendingTransactions: 0,
-    totalVerifications: 0,
-    validVerifications: 0,
-    successRate: 0,
-  },
-  pets: [],
-  transactions: [],
-  verifications: [],
-};
+
 
 // Export the enhanced client as the main API client
 export const apiClient = enhancedApiClient; 

@@ -6,7 +6,7 @@ import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
-import { PawPrint, Mail, Lock, User, Loader2, AlertCircle, CheckCircle, Info, Play, Shield, Heart, Cloud, FileText, Users, Star } from 'lucide-react';
+import { Heart, Mail, Lock, User, Loader2, AlertCircle, CheckCircle, Info, Play, Shield, FileText, Users } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 
@@ -211,7 +211,7 @@ export function AuthModal() {
                 <h3 className="font-semibold mb-3 text-lg">Simplifying Pet Care for Happier, Healthier Lives</h3>
                 <div className="grid gap-3">
                   <div className="flex items-start gap-3 p-3 bg-white/70 dark:bg-black/20 rounded-lg">
-                    <PawPrint className="h-5 w-5 text-cyan-500 mt-0.5" />
+                    <Heart className="h-5 w-5 text-cyan-500 mt-0.5" />
                     <div>
                       <div className="font-medium">Smart Digital Pet ID</div>
                       <div className="text-sm text-muted-foreground">
@@ -393,7 +393,7 @@ export function AuthModal() {
                       </>
                     ) : (
                       <>
-                        <PawPrint className="mr-2 h-4 w-4" />
+                        <Heart className="mr-2 h-4 w-4" />
                         Welcome Back to Pet Pet Club
                       </>
                     )}

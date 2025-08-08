@@ -9,15 +9,10 @@ import {
   Users, 
   CheckCircle, 
   ArrowRight,
-  Info,
   Sparkles,
-  Lock,
-  Cloud,
   FileText,
   Camera,
-  Archive,
-  Star,
-  PawPrint
+  Star
 } from 'lucide-react';
 
 interface WelcomeOnboardingProps {
@@ -37,7 +32,7 @@ export function WelcomeOnboarding({ onClose, onStartUpload }: WelcomeOnboardingP
           <div className="text-center">
             <div className="text-center mb-4">
               <h2 className="text-3xl text-cyan-500 font-medium mb-2">Pet Pet Club</h2>
-              <PawPrint className="h-12 w-12 text-cyan-500 mx-auto" />
+              <Heart className="h-12 w-12 text-cyan-500 mx-auto" />
             </div>
             <h3 className="text-xl font-semibold mb-2">Simplifying Pet Care for Better Lives</h3>
             <p className="text-muted-foreground">
@@ -49,7 +44,7 @@ export function WelcomeOnboarding({ onClose, onStartUpload }: WelcomeOnboardingP
           
           <div className="grid gap-3 mt-6">
             <div className="flex items-center gap-3 p-3 bg-cyan-50 dark:bg-cyan-950/30 rounded-lg">
-              <PawPrint className="h-5 w-5 text-cyan-500" />
+              <Heart className="h-5 w-5 text-cyan-500" />
               <div>
                 <div className="font-medium">Smart Care Technology</div>
                 <div className="text-sm text-muted-foreground">Advanced digital tools to simplify and improve pet care</div>
@@ -261,7 +256,7 @@ export function WelcomeOnboarding({ onClose, onStartUpload }: WelcomeOnboardingP
             <div>
               <CardTitle className="flex items-center gap-2">
                 {currentStepData.title}
-                {currentStep === 0 && <PawPrint className="h-5 w-5 text-cyan-500" />}
+                {currentStep === 0 && <Heart className="h-5 w-5 text-cyan-500" />}
               </CardTitle>
               <CardDescription>{currentStepData.description}</CardDescription>
             </div>
