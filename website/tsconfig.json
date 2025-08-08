@@ -21,6 +21,13 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["vite.config.ts", "node_modules", "supabase/**/*", "components/ui/calendar.tsx", "components/ui/chart.tsx"],
+  "exclude": [
+    "vite.config.ts",
+    "node_modules",
+    "supabase/**/*",
+    "website/supabase/functions/server/**/*",
+    "components/ui/calendar.tsx",
+    "components/ui/chart.tsx"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

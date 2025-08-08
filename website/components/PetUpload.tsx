@@ -10,6 +10,7 @@ import { Textarea } from './ui/textarea';
 import { Upload, Shield, Database, Link, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../utils/supabase/client';
+import { encryptFileAESGCM, uploadEncryptedToWeb3Storage, uploadEncryptedToStoracha } from '../utils/ipfs';
 
 interface UploadStep {
   id: string;
@@ -27,6 +28,13 @@ export function PetUpload({ onUploadComplete }: PetUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [petId, setPetId] = useState('');
   const [ownerInfo, setOwnerInfo] = useState('');
+  const [name, setName] = useState('');
+  const [species, setSpecies] = useState('');
+  const [breed, setBreed] = useState('');
+  const [age, setAge] = useState<number | ''>('');
+  const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const [microchipId, setMicrochipId] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [encryptionKey, setEncryptionKey] = useState('');
@@ -74,8 +82,7 @@ export function PetUpload({ onUploadComplete }: PetUploadProps) {
   };
 
   const simulateEncryption = async (file: File): Promise<{ encryptedData: string; key: string; iv: string }> => {
-    // Simulate AES-256-CBC encryption
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 400));
     const key = `aes256-key-${Math.random().toString(36).substr(2, 32)}`;
     const iv = `iv-${Math.random().toString(36).substr(2, 16)}`;
     const encryptedData = `encrypted-${file.name}-${Date.now()}`;
@@ -83,8 +90,7 @@ export function PetUpload({ onUploadComplete }: PetUploadProps) {
   };
 
   const simulateIpfsUpload = async (_encryptedData: string): Promise<string> => {
-    // Simulate IPFS upload via Web3.Storage
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     return `Qm${Math.random().toString(36).substr(2, 44)}`;
   };
 
@@ -120,6 +126,10 @@ export function PetUpload({ onUploadComplete }: PetUploadProps) {
       toast.error('Please select a file and enter pet ID');
       return;
     }
+    if (!name.trim()) {
+      toast.error('Please enter a pet name');
+      return;
+    }
 
     setIsProcessing(true);
     setCurrentStep(0);
@@ -150,19 +160,44 @@ export function PetUpload({ onUploadComplete }: PetUploadProps) {
       updateStepStatus('validation', 'completed', `Pet ID: ${petId} validated`);
       setCurrentStep(1);
 
-      // Step 2: Encryption
+      // Step 2: Encryption (real if token present)
       updateStepStatus('encryption', 'processing');
-      const { encryptedData, key } = await simulateEncryption(file);
-      setEncryptionKey(key);
-      updateStepStatus('encryption', 'completed', `Key: ${key.substr(0, 20)}...`);
-      setCurrentStep(2);
+      let key = '';
+      let cid = '';
+      try {
+        if (import.meta.env.VITE_WEB3_STORAGE_TOKEN || import.meta.env.VITE_UCAN_TOKEN) {
+          const enc = await encryptFileAESGCM(file);
+          key = JSON.stringify(enc.keyJwk);
+          setEncryptionKey(key);
+          updateStepStatus('encryption', 'completed', 'AES-GCM 256-bit');
+          setCurrentStep(2);
 
-      // Step 3: IPFS Upload
-      updateStepStatus('ipfs', 'processing');
-      const cid = await simulateIpfsUpload(encryptedData);
-      setIpfsCid(cid);
-      updateStepStatus('ipfs', 'completed', `CID: ${cid}`);
-      setCurrentStep(3);
+          // Step 3: IPFS Upload (real)
+          updateStepStatus('ipfs', 'processing');
+          if (import.meta.env.VITE_UCAN_TOKEN) {
+            cid = await uploadEncryptedToStoracha(enc.cipherBytes, `${file.name}.enc`);
+          } else {
+            cid = await uploadEncryptedToWeb3Storage(file.name, enc.cipherBytes);
+          }
+          setIpfsCid(cid);
+          updateStepStatus('ipfs', 'completed', `CID: ${cid}`);
+          setCurrentStep(3);
+        } else {
+          const sim = await simulateEncryption(file);
+          key = sim.key;
+          setEncryptionKey(key);
+          updateStepStatus('encryption', 'completed', `Key: ${key.substr(0, 20)}...`);
+          setCurrentStep(2);
+          updateStepStatus('ipfs', 'processing');
+          cid = await simulateIpfsUpload(sim.encryptedData);
+          setIpfsCid(cid);
+          updateStepStatus('ipfs', 'completed', `CID: ${cid}`);
+          setCurrentStep(3);
+        }
+      } catch (e: any) {
+        updateStepStatus('ipfs', 'error', e.message || 'Upload failed');
+        throw e;
+      }
 
       // Step 4: Blockchain Logging
       updateStepStatus('blockchain', 'processing');
@@ -179,6 +214,13 @@ export function PetUpload({ onUploadComplete }: PetUploadProps) {
         await apiClient.createPet({
           petId,
           ownerInfo,
+          name,
+          species,
+          breed,
+          age: typeof age === 'number' ? age : Number(age || 0),
+          description,
+          location,
+          microchipId,
           encryptionKey: key,
           ipfsCid: cid,
           blockchainTxHash: txHash
@@ -223,6 +265,13 @@ export function PetUpload({ onUploadComplete }: PetUploadProps) {
     setFile(null);
     setPetId('');
     setOwnerInfo('');
+    setName('');
+    setSpecies('');
+    setBreed('');
+    setAge('');
+    setDescription('');
+    setLocation('');
+    setMicrochipId('');
     setEncryptionKey('');
     setIpfsCid('');
     setBlockchainTxHash('');
@@ -259,6 +308,83 @@ export function PetUpload({ onUploadComplete }: PetUploadProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="name">Pet Name *</Label>
+                <Input
+                  id="name"
+                  placeholder="e.g. Luna"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={isProcessing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="species">Species</Label>
+                <Input
+                  id="species"
+                  placeholder="e.g. Dog, Cat"
+                  value={species}
+                  onChange={(e) => setSpecies(e.target.value)}
+                  disabled={isProcessing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="breed">Breed</Label>
+                <Input
+                  id="breed"
+                  placeholder="e.g. Golden Retriever"
+                  value={breed}
+                  onChange={(e) => setBreed(e.target.value)}
+                  disabled={isProcessing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="age">Age (years)</Label>
+                <Input
+                  id="age"
+                  type="number"
+                  min={0}
+                  step={1}
+                  placeholder="0"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value === '' ? '' : Number(e.target.value))}
+                  disabled={isProcessing}
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Short notes about your pet"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  disabled={isProcessing}
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  placeholder="City / Area"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  disabled={isProcessing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="microchipId">Microchip ID</Label>
+                <Input
+                  id="microchipId"
+                  placeholder="Optional microchip identifier"
+                  value={microchipId}
+                  onChange={(e) => setMicrochipId(e.target.value)}
+                  disabled={isProcessing}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="petId">Pet ID *</Label>
               <Input

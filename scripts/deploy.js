@@ -3,14 +3,12 @@ require("dotenv").config();
 const hre = require("hardhat");
 
 async function main() {
-  // compile & get the factory
+  await hre.run("compile");
   const PetStorage = await hre.ethers.getContractFactory("PetStorage");
-  // deploy with custom gas limit to avoid out-of-gas errors
-  const petStorage = await PetStorage.deploy({ gasLimit: 6000000 });
-  // wait until it’s mined
-  await petStorage.deployed();
-
-  console.log("✅ PetStorage deployed to:", petStorage.address);
+  const petStorage = await PetStorage.deploy({ gasLimit: 6_000_000 });
+  const receipt = await petStorage.deploymentTransaction().wait();
+  console.log("✅ PetStorage deployed to:", await petStorage.getAddress());
+  console.log("⛽ Tx:", receipt?.hash || petStorage.deploymentTransaction().hash);
 }
 
 main()

@@ -1,11 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
-import { Textarea } from './components/ui/textarea';
 import { Badge } from './components/ui/badge';
-import { Alert, AlertDescription } from './components/ui/alert';
 
 import { 
   Heart, 
@@ -24,7 +22,6 @@ import {
   Plus,
   Database,
   Eye,
-  Camera,
   MapPin,
   Activity,
   TrendingUp,
@@ -33,52 +30,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
+import { AuthModal } from './components/AuthModal';
+import { useAuth } from './components/AuthContext';
+import { PetUpload } from './components/PetUpload';
+import { apiClient } from './utils/supabase/client';
 
-// Enhanced mock data
-const mockPets: Pet[] = [
-  { 
-    id: 'PET001', 
-    name: 'Max', 
-    species: 'Dog', 
-    breed: 'Golden Retriever', 
-    age: 3, 
-    cid: 'QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG', 
-    status: 'confirmed' as const,
-    description: 'Friendly and energetic Golden Retriever who loves playing fetch and swimming.',
-    location: 'New York, NY',
-    microchipId: '985141123456789',
-    lastUpdated: '2024-01-15T10:30:00Z',
-    photoUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=400&fit=crop'
-  },
-  { 
-    id: 'PET002', 
-    name: 'Luna', 
-    species: 'Cat', 
-    breed: 'Persian', 
-    age: 2, 
-    cid: 'QmZ9tXpLm3K8vN2qR5sT7uW1xY4aB6cD9eF0gH2iJ3kL4mN', 
-    status: 'confirmed' as const,
-    description: 'Elegant Persian cat with a calm temperament and beautiful long fur.',
-    location: 'Los Angeles, CA',
-    microchipId: '985141987654321',
-    lastUpdated: '2024-01-14T15:45:00Z',
-    photoUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=400&fit=crop'
-  },
-  { 
-    id: 'PET003', 
-    name: 'Buddy', 
-    species: 'Dog', 
-    breed: 'Labrador', 
-    age: 5, 
-    cid: 'QmX8y7z6w5v4u3t2s1r0q9p8o7n6m5l4k3j2i1h0g9f8e7d6c5b4a3', 
-    status: 'pending' as const,
-    description: 'Loyal Labrador who is great with kids and loves outdoor activities.',
-    location: 'Chicago, IL',
-    microchipId: '985141456789123',
-    lastUpdated: '2024-01-13T09:20:00Z',
-    photoUrl: 'https://images.unsplash.com/photo-1546527868-ccb7ee7dfa6a?w=400&h=400&fit=crop'
-  }
-];
+// no mock list; fetch after login
 
 interface Pet {
   id: string;
@@ -95,104 +52,100 @@ interface Pet {
   photoUrl: string;
 }
 
-interface User {
-  name: string;
-  email: string;
-  avatar?: string;
-  role: 'owner' | 'admin';
-  joinDate: string;
-}
+// user type provided by Supabase; we avoid redeclaring to prevent conflicts
 
 function App() {
-  const [user] = useState<User>({ 
-    name: 'Demo User', 
-    email: 'demo@petpetclub.com',
-    role: 'owner',
-    joinDate: '2024-01-01'
-  });
+  const { user, loading, signOut } = useAuth();
   const [isOnline] = useState(true);
-  const [pets, setPets] = useState<Pet[]>(mockPets);
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [showLogin, setShowLogin] = useState(false);
-  const [_showUpload, setShowUpload] = useState(false);
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    try {
+      return localStorage.getItem('ppc_active_tab') || 'dashboard';
+    } catch {
+      return 'dashboard';
+    }
+  });
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'confirmed' | 'pending'>('all');
-  const [newPet, setNewPet] = useState({
-    name: '',
-    species: '',
-    breed: '',
-    age: '',
-    description: '',
-    location: '',
-    microchipId: ''
-  });
+  // PetUpload handles uploads; remove unused local form state
+
+  // Load pets once authenticated
+  useEffect(() => {
+    const fetchPets = async () => {
+      try {
+        const response = await apiClient.getPets();
+        const list = response.pets || [];
+        setPets(list.map((p: any, idx: number) => ({
+          id: p.id || p.pet_id || `PET${String(idx + 1).padStart(3, '0')}`,
+          name: p.name || p.pet_id || 'Pet',
+          species: p.species || 'Unknown',
+          breed: p.breed || 'Unknown',
+          age: Number(p.age || 0),
+          cid: p.ipfsCid || p.ipfs_cid || '',
+          status: (p.status as any) || 'confirmed',
+          description: p.description || '',
+          location: p.location || '',
+          microchipId: p.microchipId || p.microchip_id || '',
+          lastUpdated: p.updated_at || p.created_at || new Date().toISOString(),
+          photoUrl: p.photoUrl || ''
+        })));
+      } catch {
+        setPets([]);
+      }
+    };
+    if (user) fetchPets();
+  }, [user]);
+
+  // Persist active tab across refreshes
+  useEffect(() => {
+    try {
+      localStorage.setItem('ppc_active_tab', activeTab);
+    } catch {}
+  }, [activeTab]);
 
   // Enhanced stats calculation
+  const total = pets.length || 0;
+  const confirmed = pets.filter(p => (p.status === 'confirmed')).length;
+  const pending = pets.filter(p => p.status === 'pending').length;
   const stats = {
-    totalPets: pets.length,
-    totalTransactions: pets.length,
-    confirmedTransactions: pets.filter(p => p.status === 'confirmed').length,
-    pendingTransactions: pets.filter(p => p.status === 'pending').length,
-    totalVerifications: pets.length,
-    validVerifications: pets.filter(p => p.status === 'confirmed').length,
-    successRate: Math.round((pets.filter(p => p.status === 'confirmed').length / pets.length) * 100),
-    totalStorage: pets.length * 2.5, // MB
-    averageAge: Math.round(pets.reduce((sum, pet) => sum + pet.age, 0) / pets.length)
+    totalPets: total,
+    totalTransactions: total,
+    confirmedTransactions: confirmed,
+    pendingTransactions: pending,
+    totalVerifications: total,
+    validVerifications: confirmed,
+    successRate: total > 0 ? Math.round((confirmed / total) * 100) : 0,
+    totalStorage: total * 2.5, // MB
+    averageAge: total > 0 ? Math.round(pets.reduce((sum, pet) => sum + (Number.isFinite(pet.age) ? pet.age : 0), 0) / total) : 0
   };
 
   // Filter pets based on search and status
   const filteredPets = pets.filter(pet => {
-    const matchesSearch = pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         pet.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         pet.species.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || pet.status === filterStatus;
+    const name = (pet.name || '').toString();
+    const breed = (pet.breed || '').toString();
+    const species = (pet.species || '').toString();
+    const status = (pet.status || 'confirmed').toString();
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = name.toLowerCase().includes(term) ||
+                         breed.toLowerCase().includes(term) ||
+                         species.toLowerCase().includes(term);
+    const matchesStatus = filterStatus === 'all' || status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowLogin(false);
-    toast.success('Welcome back! 🐾');
-  };
+  // No inline login; use AuthModal instead
 
-  const handleUploadPet = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newPet.name || !newPet.species || !newPet.breed || !newPet.age) {
-      toast.error('Please fill in all required fields');
-      return;
+  // no local handleUploadPet; using PetUpload
+
+  const handleDeletePet = async (petId: string) => {
+    try {
+      await apiClient.deletePet(petId);
+      setPets(pets.filter(pet => pet.id !== petId));
+      toast.success('Pet removed from records');
+    } catch (e: any) {
+      toast.error('Failed to delete pet', { description: e?.message });
     }
-
-    // Simulate upload process
-    toast.loading('Uploading pet data to blockchain...');
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const pet: Pet = {
-      id: `PET${String(pets.length + 1).padStart(3, '0')}`,
-      name: newPet.name,
-      species: newPet.species,
-      breed: newPet.breed,
-      age: parseInt(newPet.age),
-      cid: `Qm${Math.random().toString(36).substring(2, 15)}`,
-      status: 'confirmed',
-      description: newPet.description || 'No description provided',
-      location: newPet.location || 'Location not specified',
-      microchipId: newPet.microchipId || `MC${Math.random().toString(36).substring(2, 10)}`,
-      lastUpdated: new Date().toISOString(),
-      photoUrl: 'https://images.unsplash.com/photo-1546527868-ccb7ee7dfa6a?w=400&h=400&fit=crop'
-    };
-    
-    setPets([...pets, pet]);
-    setNewPet({ name: '', species: '', breed: '', age: '', description: '', location: '', microchipId: '' });
-    setShowUpload(false);
-    toast.success(`${pet.name} has been successfully added to the blockchain! 🎉`);
-  };
-
-  const handleDeletePet = (petId: string) => {
-    setPets(pets.filter(pet => pet.id !== petId));
-    toast.success('Pet removed from records');
   };
 
   const formatDate = (dateString: string) => {
@@ -205,55 +158,8 @@ function App() {
     });
   };
 
-  if (showLogin) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="text-center pb-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <Heart className="h-10 w-10 text-white" />
-            </div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-              Pet Pet Club
-            </CardTitle>
-            <CardDescription className="text-lg mt-2">
-              Secure Digital Pet Identity System
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="Enter your email" 
-                  className="h-12 text-base"
-                  required 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  placeholder="Enter your password" 
-                  className="h-12 text-base"
-                  required 
-                />
-              </div>
-              <Button type="submit" className="w-full h-12 text-base font-semibold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700">
-                Sign In to Pet Pet Club
-              </Button>
-            </form>
-            <div className="text-center text-sm text-muted-foreground">
-              <p>Don't have an account? <a href="#" className="text-cyan-600 hover:underline">Sign up</a></p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  if (loading) return null;
+  if (!user) return <AuthModal />;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -291,11 +197,11 @@ function App() {
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">
-                      {user.name.split(' ').map(n => n[0]).join('')}
+                      {(user.user_metadata?.name || user.email || 'U').toString().slice(0,2).toUpperCase()}
                     </span>
                   </div>
                   <div className="hidden md:block">
-                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-sm font-medium">{(user.user_metadata?.name as string) || user.email}</p>
                     <p className="text-xs text-muted-foreground">{user.email}</p>
                   </div>
                 </div>
@@ -303,7 +209,7 @@ function App() {
               
               <Button 
                 variant="outline" 
-                onClick={() => setShowLogin(true)}
+                onClick={signOut}
                 className="hidden md:flex"
               >
                 <LogOut className="h-4 w-4 mr-2" />
@@ -360,7 +266,7 @@ function App() {
             {/* Welcome Section */}
             <div className="text-center space-y-4">
               <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                Welcome back, {user.name}! 🐾
+                Welcome back, {(user.user_metadata?.name as string) || user.email}! 🐾
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Your pets are safely stored on the blockchain with military-grade encryption. 
@@ -757,141 +663,16 @@ function App() {
                 Securely upload your pet's information to the blockchain with military-grade encryption
               </p>
             </div>
-
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5 text-cyan-600" />
-                  Pet Information
-                </CardTitle>
-                <CardDescription>
-                  Fill in your pet's details. All data will be encrypted and stored securely on the blockchain.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleUploadPet} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Pet Name *</Label>
-                      <Input 
-                        id="name" 
-                        value={newPet.name}
-                        onChange={(e) => setNewPet({...newPet, name: e.target.value})}
-                        placeholder="Enter pet name" 
-                        required 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="species">Species *</Label>
-                      <Input 
-                        id="species" 
-                        value={newPet.species}
-                        onChange={(e) => setNewPet({...newPet, species: e.target.value})}
-                        placeholder="Dog, Cat, Bird, etc." 
-                        required 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="breed">Breed *</Label>
-                      <Input 
-                        id="breed" 
-                        value={newPet.breed}
-                        onChange={(e) => setNewPet({...newPet, breed: e.target.value})}
-                        placeholder="Enter breed" 
-                        required 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="age">Age (years) *</Label>
-                      <Input 
-                        id="age" 
-                        type="number" 
-                        value={newPet.age}
-                        onChange={(e) => setNewPet({...newPet, age: e.target.value})}
-                        placeholder="Age in years" 
-                        min="0"
-                        max="30"
-                        required 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location</Label>
-                      <Input 
-                        id="location" 
-                        value={newPet.location}
-                        onChange={(e) => setNewPet({...newPet, location: e.target.value})}
-                        placeholder="City, State" 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="microchipId">Microchip ID</Label>
-                      <Input 
-                        id="microchipId" 
-                        value={newPet.microchipId}
-                        onChange={(e) => setNewPet({...newPet, microchipId: e.target.value})}
-                        placeholder="Microchip identification number" 
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea 
-                      id="description" 
-                      value={newPet.description}
-                      onChange={(e) => setNewPet({...newPet, description: e.target.value})}
-                      placeholder="Tell us about your pet's personality, health conditions, or special needs..." 
-                      rows={4}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="photo">Pet Photo</Label>
-                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-muted-foreground/50 transition-colors">
-                      <Camera className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Click to upload or drag and drop
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        PNG, JPG up to 10MB
-                      </p>
-                      <Input 
-                        id="photo" 
-                        type="file" 
-                        accept="image/*" 
-                        className="hidden"
-                      />
-                    </div>
-                  </div>
-
-                  <Alert>
-                    <Shield className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Security Notice:</strong> All data will be encrypted with AES-256 encryption 
-                      before being stored on IPFS and logged on the Polygon blockchain. Your pet's information 
-                      is protected with military-grade security.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <div className="flex gap-4">
-                    <Button 
-                      type="submit" 
-                      className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload to Blockchain
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline"
-                      onClick={() => setActiveTab('dashboard')}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
+            <PetUpload onUploadComplete={async () => {
+              try {
+                const { pets } = await apiClient.getPets();
+                setPets(Array.isArray(pets) ? pets : []);
+              } catch (e) {
+                setPets([]);
+              }
+              // Navigate to My Pets after upload
+              setActiveTab('pets');
+            }} />
           </div>
         )}
       </main>

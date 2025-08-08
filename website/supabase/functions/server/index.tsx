@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { Hono } from 'npm:hono@4';
 import { cors } from 'npm:hono/cors';
@@ -8,7 +9,16 @@ const app = new Hono();
 
 // Middleware
 app.use('*', cors({
-  origin: ['https://figma.com', 'https://www.figma.com'],
+  origin: [
+    'https://figma.com',
+    'https://www.figma.com',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001'
+  ],
   credentials: true,
 }));
 
@@ -125,6 +135,27 @@ app.get('/make-server-fc39f46a/pets', async (c) => {
     return c.json({ pets });
   } catch (error) {
     console.log('Get pets error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+app.delete('/make-server-fc39f46a/pets/:petId', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const petId = c.req.param('petId');
+    const key = `pet:${user.id}:${petId}`;
+    await kv.del(key);
+
+    const listKey = `user_pets:${user.id}`;
+    const pets = await kv.get(listKey) || [];
+    const updated = pets.filter((p: any) => p.pet_id !== petId);
+    await kv.set(listKey, updated);
+    return c.json({ success: true });
+  } catch (error) {
+    console.log('Delete pet error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

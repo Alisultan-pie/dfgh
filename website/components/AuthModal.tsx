@@ -385,6 +385,29 @@ export function AuthModal() {
                     </div>
                   </div>
 
+                  <div className="flex items-center justify-between">
+                    <div />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="px-0 h-auto text-sm text-cyan-600"
+                      disabled={isLoading || !loginEmail}
+                      onClick={async () => {
+                        try {
+                          const { supabase } = await import('../utils/supabase/client');
+                          await supabase.auth.resetPasswordForEmail(loginEmail, {
+                            redirectTo: typeof window !== 'undefined' ? `${window.location.origin}` : undefined,
+                          });
+                          toast.info('Password reset email sent', { description: 'Check your inbox to set a new password.' });
+                        } catch (e) {
+                          toast.error('Failed to send reset email');
+                        }
+                      }}
+                    >
+                      Forgot password?
+                    </Button>
+                  </div>
+
                   <Button type="submit" disabled={isLoading} className="w-full bg-cyan-500 hover:bg-cyan-600">
                     {isLoading ? (
                       <>

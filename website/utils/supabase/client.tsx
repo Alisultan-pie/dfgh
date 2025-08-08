@@ -71,6 +71,18 @@ const checkConnectivity = async (): Promise<boolean> => {
 };
 
 export const apiClient = {
+  async getActiveUserId(): Promise<string | null> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) return session.user.id;
+    } catch {}
+    try {
+      const { mockAuth } = await import('../../utils/mockAuth');
+      return (mockAuth.getCurrentUser() as any)?.id || null;
+    } catch {
+      return null;
+    }
+  },
   async request(endpoint: string, options: RequestInit = {}) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -129,7 +141,7 @@ export const apiClient = {
   // Calculate stats from local storage
   async calculateLocalStats() {
     try {
-      const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+      const userId = await this.getActiveUserId();
       if (!userId) {
         return fallbackData.stats;
       }
@@ -190,15 +202,24 @@ export const apiClient = {
     } catch (error) {
       console.error('Create pet API failed, using local storage fallback');
       // Store in localStorage as fallback
-      const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+      const userId = await this.getActiveUserId();
       if (userId) {
         const existingPets = JSON.parse(localStorage.getItem(`pets_${userId}`) || '[]');
         const newPet = { 
           ...petData, 
-          id: Date.now().toString(), 
-          userId, 
-          created_at: new Date().toISOString(),
-          status: 'completed'
+          id: petData.petId || Date.now().toString(),
+          name: petData.name || 'Pet',
+          species: petData.species || 'Unknown',
+          breed: petData.breed || 'Unknown',
+          age: typeof petData.age === 'number' ? petData.age : Number(petData.age || 0),
+          description: petData.description || '',
+          location: petData.location || '',
+          microchipId: petData.microchipId || '',
+          photoUrl: '',
+          cid: petData.ipfsCid,
+          status: 'completed',
+          userId,
+          created_at: new Date().toISOString()
         };
         existingPets.push(newPet);
         localStorage.setItem(`pets_${userId}`, JSON.stringify(existingPets));
@@ -232,12 +253,28 @@ export const apiClient = {
     } catch (error) {
       console.log('Get pets API failed, using local storage fallback');
       // Use localStorage as fallback
-      const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+      const userId = await this.getActiveUserId();
       if (userId) {
         const pets = JSON.parse(localStorage.getItem(`pets_${userId}`) || '[]');
         return { pets };
       }
       return { pets: [] };
+    }
+  },
+
+  async deletePet(petId: string) {
+    try {
+      return await this.request(`/pets/${encodeURIComponent(petId)}`, { method: 'DELETE' });
+    } catch (error) {
+      console.log('Delete pet API failed, using local storage fallback');
+      const userId = await this.getActiveUserId();
+      if (userId) {
+        const pets = JSON.parse(localStorage.getItem(`pets_${userId}`) || '[]');
+        const filtered = pets.filter((p: any) => (p.petId || p.pet_id || p.id) !== petId);
+        localStorage.setItem(`pets_${userId}`, JSON.stringify(filtered));
+        return { success: true };
+      }
+      throw error;
     }
   },
 
@@ -247,7 +284,7 @@ export const apiClient = {
     } catch (error) {
       console.log('Get pet API failed, using local storage fallback');
       // Use localStorage as fallback
-      const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+      const userId = await this.getActiveUserId();
       if (userId) {
         const pets = JSON.parse(localStorage.getItem(`pets_${userId}`) || '[]');
         const pet = pets.find((p: any) => p.petId === petId || p.pet_id === petId);
@@ -269,7 +306,7 @@ export const apiClient = {
     } catch (error) {
       console.error('Create transaction API failed, using local storage fallback');
       // Store in localStorage as fallback
-      const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+      const userId = await this.getActiveUserId();
       if (userId) {
         const existingTxs = JSON.parse(localStorage.getItem(`transactions_${userId}`) || '[]');
         const newTx = { 
@@ -293,7 +330,7 @@ export const apiClient = {
     } catch (error) {
       console.log('Get transactions API failed, using local storage fallback');
       // Use localStorage as fallback
-      const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+      const userId = await this.getActiveUserId();
       if (userId) {
         const transactions = JSON.parse(localStorage.getItem(`transactions_${userId}`) || '[]');
         return { transactions };
@@ -312,7 +349,7 @@ export const apiClient = {
     } catch (error) {
       console.error('Create verification API failed, using local storage fallback');
       // Store in localStorage as fallback
-      const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+      const userId = await this.getActiveUserId();
       if (userId) {
         const existingVers = JSON.parse(localStorage.getItem(`verifications_${userId}`) || '[]');
         const newVer = { 
@@ -336,7 +373,7 @@ export const apiClient = {
     } catch (error) {
       console.log('Get verifications API failed, using local storage fallback');
       // Use localStorage as fallback
-      const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+      const userId = await this.getActiveUserId();
       if (userId) {
         const verifications = JSON.parse(localStorage.getItem(`verifications_${userId}`) || '[]');
         return { verifications };
