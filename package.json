@@ -5,7 +5,8 @@
   "main": "pet-biometric-storage.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "node watcher.js"
+    "watch": "node watcher.js",
+    "dev:website": "npm --prefix website run dev"
   },
   "keywords": [],
   "author": "",

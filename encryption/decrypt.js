@@ -1,35 +1,44 @@
-const fs = require('fs');
-const crypto = require('crypto');
-const path = require('path');
+// encryption/decrypt.js
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
 
-// === SETTINGS ===
-// Replace these with your saved key and IV from keys.txt
-const keyHex = 'bbdcb09c0b2d548b4458cbbdba92f0bf3fb9e688f6293c3cec88301cb5efef58';
-const ivHex = '07223d3394f1ddc77e293b4b221abb0a';
+/**
+ * Decrypts a GCM-encrypted file.
+ * @param {string} inputPath - path to encrypted file (ciphertext only)
+ * @param {string} outputPath - where to write plaintext
+ * @param {string} keyHex - 64-hex chars (32 bytes)
+ * @param {string} ivHex - 24-hex chars (12 bytes)
+ * @param {string} tagHex - 32-hex chars (16 bytes auth tag)
+ */
+export function decryptImage(inputPath, outputPath, keyHex, ivHex, tagHex) {
+  const key = Buffer.from(keyHex, "hex");
+  const iv = Buffer.from(ivHex, "hex");
+  const tag = Buffer.from(tagHex, "hex");
 
-const key = Buffer.from(keyHex, 'hex');
-const iv = Buffer.from(ivHex, 'hex');
+  if (key.length !== 32) throw new Error("Key must be 32 bytes (64 hex chars)");
+  if (iv.length !== 12) throw new Error("IV must be 12 bytes (24 hex chars) for GCM");
+  if (tag.length !== 16) throw new Error("Auth tag must be 16 bytes (32 hex chars)");
 
-// === FILE PATHS ===
-const encryptedFilePath = path.join(__dirname, '..', 'nose_encrypted.jpg'); // input
-const decryptedOutputPath = path.join(__dirname, '..', 'nose_decrypted.jpg'); // output
-
-// === DECRYPTION FUNCTION ===
-function decryptFileStream(inputPath, key, iv) {
-  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-  const input = fs.createReadStream(inputPath);
-  return input.pipe(decipher);
+  const ciphertext = fs.readFileSync(inputPath);
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(tag);
+  const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  fs.writeFileSync(outputPath, plaintext);
 }
 
-module.exports = { decryptFileStream };
-
-if (key.length !== 32 || iv.length !== 16) {
-  console.error('❌ Invalid key or IV length. Key must be 32 bytes, IV must be 16 bytes.');
-  process.exit(1);
-}
-
-try {
-  decryptFile(encryptedFilePath, decryptedOutputPath);
-} catch (err) {
-  console.error('❌ Unexpected decryption error:', err.message);
+// CLI: node encryption/decrypt.js <encrypted> <decrypted> <keyHex> <ivHex> <tagHex>
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const [, , inP, outP, keyHex, ivHex, tagHex] = process.argv;
+  if (!inP || !outP || !keyHex || !ivHex || !tagHex) {
+    console.error("Usage: node encryption/decrypt.js <encrypted> <decrypted> <keyHex> <ivHex> <tagHex>");
+    process.exit(1);
+  }
+  try {
+    decryptImage(inP, outP, keyHex, ivHex, tagHex);
+    console.log(`✅ Decrypted → ${outP}`);
+  } catch (err) {
+    console.error("❌ Decryption failed:", err.message);
+    process.exit(1);
+  }
 }

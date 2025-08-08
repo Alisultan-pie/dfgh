@@ -4,53 +4,54 @@ import path from "path";
 import crypto from "crypto";
 
 // === ENCRYPTION SETTINGS ===
-const algorithm = "aes-256-cbc";
+const algorithm = "aes-256-gcm";
 
 /**
- * Encrypts a file at inputPath → outputPath, and logs key+IV to keyPath.
+ * Encrypts a file at inputPath → outputPath, and logs key+IV+TAG to keyPath.
+ * Uses AES-256-GCM for confidentiality and integrity.
  *
  * @param {string} inputPath   - Path to plaintext (e.g. nose-print) image
  * @param {string} outputPath  - Where to write encrypted data (e.g. encrypted.bin)
- * @param {string} keyPath     - File to append key+IV info (e.g. keys.txt)
+ * @param {string} keyPath     - File to append key+IV+TAG info (e.g. keys.txt)
  */
 export function encryptImage(inputPath, outputPath, keyPath) {
-  // generate random key & iv
-  const key = crypto.randomBytes(32);
-  const iv  = crypto.randomBytes(16);
+  const key = crypto.randomBytes(32); // 256-bit
+  const iv = crypto.randomBytes(12);  // 96-bit IV recommended for GCM
 
-  const absIn  = path.isAbsolute(inputPath)  ? inputPath  : path.join(process.cwd(), inputPath);
+  const absIn = path.isAbsolute(inputPath) ? inputPath : path.join(process.cwd(), inputPath);
   const absOut = path.isAbsolute(outputPath) ? outputPath : path.join(process.cwd(), outputPath);
 
   if (!fs.existsSync(absIn)) {
     throw new Error("Input file not found: " + absIn);
   }
 
+  const plaintext = fs.readFileSync(absIn);
   const cipher = crypto.createCipheriv(algorithm, key, iv);
-  const input  = fs.createReadStream(absIn);
-  const output = fs.createWriteStream(absOut);
+  const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+  const authTag = cipher.getAuthTag();
 
-  input.pipe(cipher).pipe(output);
+  fs.writeFileSync(absOut, ciphertext);
 
-  output.on("close", () => {
-    const record = [
-      `File: ${path.basename(absIn)}`,
-      `Key:  ${key.toString("hex")}`,
-      `IV:   ${iv.toString("hex")}`,
-      `Timestamp: ${new Date().toISOString()}`,
-      ""
-    ].join("\n");
-    fs.appendFileSync(keyPath, record);
-    console.log(`✅ Encrypted ${absIn} → ${absOut}`);
-    console.log(`🔑 Key+IV logged to ${keyPath}`);
-  });
+  const record = [
+    `File: ${path.basename(absIn)}`,
+    `Algo: ${algorithm}`,
+    `Key:  ${key.toString("hex")}`,
+    `IV:   ${iv.toString("hex")}`,
+    `TAG:  ${authTag.toString("hex")}`,
+    `Timestamp: ${new Date().toISOString()}`,
+    ""
+  ].join("\n");
+  fs.appendFileSync(keyPath, record);
+  console.log(`✅ Encrypted ${absIn} → ${absOut}`);
+  console.log(`🔑 Key/IV/TAG logged to ${keyPath}`);
 }
 
 // If you want to run this file directly:
 // node encryption/encrypt.js <inputPath> <outputPath> <keyPath>
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const [,, inP, outP, kP] = process.argv;
+  const [, , inP, outP, kP] = process.argv;
   if (!inP || !outP || !kP) {
-    console.error("Usage: node encrypt.js <input> <output> <keyLog>");
+    console.error("Usage: node encryption/encrypt.js <input> <output> <keyLog>");
     process.exit(1);
   }
   encryptImage(inP, outP, kP);
