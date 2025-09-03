@@ -1,35 +1,47 @@
 // ipfs/upload.js
 import fs from "fs";
 import path from "path";
-import { create } from "@web3-storage/w3up-client";
+import { create } from "@storacha/client";
 import { File } from "web3.storage";
 import dotenv from "dotenv";
 dotenv.config();
 
 const uploadMethod = "storacha"; // Always use Storacha
-const ucanToken = process.env.UCAN_TOKEN;
 
 let client;
 let isStoracha = false;
 
-if (!ucanToken) {
-  console.error("🚨 UCAN_TOKEN is missing in .env");
-  console.log("💡 Please add your UCAN_TOKEN to the .env file");
-  process.exit(1);
-}
-
 try {
-  // Create new client using the correct API
   client = await create();
-  
-  // The new client doesn't use login() with token directly
-  // Instead, we need to set up the client differently
-  console.log("✅ Using Storacha/UCAN authentication for IPFS uploads");
+
+  // Configure space/proof from environment
+  const spaceDid = process.env.W3UP_SPACE_DID || process.env.VITE_UCAN_TOKEN;
+  const proofRaw = process.env.W3UP_PROOF || process.env.VITE_UCAN_TOKEN;
+  if (!spaceDid || !proofRaw) {
+    throw new Error(
+      "W3UP_SPACE_DID and W3UP_PROOF are required. Generate them in Storacha Console or via w3cli."
+    );
+  }
+
+  // Support JSON proof or base64/compact string
+  let proof;
+  try {
+    proof = JSON.parse(proofRaw);
+  } catch {
+    proof = proofRaw;
+  }
+
+  await client.addSpace(spaceDid);
+  await client.addProof(proof);
+  await client.setCurrentSpace(spaceDid);
+
+  console.log("✅ Storacha space configured:", spaceDid);
   isStoracha = true;
 } catch (error) {
   console.error("❌ Failed to initialize Storacha client:", error.message);
-  console.log("💡 Please check your UCAN_TOKEN is valid");
-  console.log("💡 You may need to get a new token from https://console.web3.storage/");
+  console.error(
+    "Set W3UP_SPACE_DID and W3UP_PROOF in your .env (root) or use w3cli/console to obtain them."
+  );
   process.exit(1);
 }
 
@@ -54,15 +66,95 @@ export async function uploadEncryptedImage(filePath) {
       // Upload via Storacha using the new API
       cid = await client.uploadFile(file);
     } else {
-      // Upload via Web3.Storage
-      const files = [file];
-      cid = await client.put(files, { wrapWithDirectory: false });
+      throw new Error("Storacha client not initialized");
     }
     
     console.log(`✅ Uploaded ${abs} → CID: ${cid}`);
     return cid;
   } catch (error) {
     console.error("❌ Upload failed:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Uploads pet metadata as JSON to IPFS and returns its CID.
+ *
+ * @param {Object} metadata - Pet metadata object
+ * @returns {Promise<string>} - The resulting CID for the metadata
+ */
+export async function uploadPetMetadata(metadata) {
+  try {
+    // Create a comprehensive metadata object
+    const petMetadata = {
+      ...metadata,
+      uploadedAt: new Date().toISOString(),
+      version: "1.0",
+      type: "pet-metadata"
+    };
+    
+    // Convert to JSON and create a file
+    const jsonData = JSON.stringify(petMetadata, null, 2);
+    const metadataFile = new File([jsonData], `pet-metadata-${metadata.petId || Date.now()}.json`, {
+      type: 'application/json'
+    });
+    
+    let cid;
+    if (isStoracha) {
+      // Upload metadata to IPFS
+      cid = await client.uploadFile(metadataFile);
+    } else {
+      throw new Error("Storacha client not initialized");
+    }
+    
+    console.log(`✅ Pet metadata uploaded → CID: ${cid}`);
+    console.log(`📋 Metadata includes: ${Object.keys(petMetadata).join(', ')}`);
+    return cid;
+  } catch (error) {
+    console.error("❌ Metadata upload failed:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Uploads both pet photo and metadata to IPFS
+ *
+ * @param {string} filePath - Path to the pet photo
+ * @param {Object} metadata - Pet metadata object
+ * @returns {Promise<Object>} - Object containing both CIDs
+ */
+export async function uploadPetComplete(filePath, metadata) {
+  try {
+    console.log(`🐕 Uploading complete pet data for: ${metadata.name || 'Unknown Pet'}`);
+    
+    // Upload photo first
+    console.log(`📸 Step 1: Uploading pet photo...`);
+    const photoCID = await uploadEncryptedImage(filePath);
+    
+    // Add photo CID to metadata
+    const enhancedMetadata = {
+      ...metadata,
+      photoCID: photoCID,
+      photoIPFSUrl: `https://ipfs.io/ipfs/${photoCID}`
+    };
+    
+    // Upload metadata
+    console.log(`📋 Step 2: Uploading pet metadata...`);
+    const metadataCID = await uploadPetMetadata(enhancedMetadata);
+    
+    console.log(`✅ Complete pet data uploaded successfully!`);
+    console.log(`📸 Photo CID: ${photoCID}`);
+    console.log(`📋 Metadata CID: ${metadataCID}`);
+    
+    return {
+      photoCID,
+      metadataCID,
+      photoIPFSUrl: `https://ipfs.io/ipfs/${photoCID}`,
+      metadataIPFSUrl: `https://ipfs.io/ipfs/${metadataCID}`,
+      metadata: enhancedMetadata
+    };
+  } catch (error) {
+    console.error("❌ Complete pet upload failed:", error.message);
     throw error;
   }
 }
@@ -79,9 +171,7 @@ export async function downloadFromIPFS(cid, outputPath) {
     if (isStoracha) {
       file = await client.get(cid);
     } else {
-      const res = await client.get(cid);
-      const files = await res.files();
-      file = files[0];
+      throw new Error("Storacha client not initialized");
     }
     
     if (!file) {

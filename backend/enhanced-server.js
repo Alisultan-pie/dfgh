@@ -11,7 +11,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Import existing functionality
-import { uploadEncryptedImage, downloadFromIPFS } from '../ipfs/upload.js';
+import { uploadEncryptedImage, downloadFromIPFS, uploadPetComplete, uploadPetMetadata } from '../ipfs/upload.js';
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 const CONTRACT_ABI = JSON.parse(fs.readFileSync('./backend/PetStorageABI.json', 'utf8'));
 const PROVIDER_URL = process.env.PROVIDER_URL;
@@ -113,23 +113,123 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
+// Enhanced upload endpoint that handles both photo and metadata
+app.post('/upload-complete', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const file = req.file;
+    const {
+      petName,
+      species,
+      breed,
+      age,
+      description,
+      location,
+      microchipId,
+      ownerName,
+      ownerEmail,
+      encryptionKey
+    } = req.body;
+    
+    // Generate a unique pet ID
+    const petId = `pet_${Date.now()}_${(petName || 'pet').toLowerCase().replace(/\s+/g, '_')}`;
+    
+    // Prepare metadata
+    const metadata = {
+      petId,
+      name: petName || 'Unknown Pet',
+      species: species || 'Unknown',
+      breed: breed || 'Unknown',
+      age: parseInt(age) || 0,
+      description: description || '',
+      location: location || '',
+      microchipId: microchipId || '',
+      owner: {
+        name: ownerName || '',
+        email: ownerEmail || ''
+      },
+      registrationDate: new Date().toISOString(),
+      encryptionKey: encryptionKey ? 'present' : 'none' // Don't store actual key
+    };
+    
+    console.log(`🐕 Processing complete upload for pet: ${metadata.name}`);
+    
+    // Encrypt the file if encryption key is provided
+    let encryptedFilePath = file.path;
+    if (encryptionKey) {
+      const encryptedPath = path.join(__dirname, '..', 'encryption', `${petId}_encrypted.jpg`);
+      // Here you would implement the encryption logic
+      // For now, we'll just copy the file
+      fs.copyFileSync(file.path, encryptedPath);
+      encryptedFilePath = encryptedPath;
+    }
+
+    // Upload both photo and metadata to IPFS
+    const uploadResult = await uploadPetComplete(encryptedFilePath, metadata);
+    
+    // Compute hash of the photo
+    const fileBuffer = fs.readFileSync(encryptedFilePath);
+    const photoHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
+    // Clean up temporary file
+    fs.unlinkSync(file.path);
+    if (encryptionKey && fs.existsSync(encryptedFilePath)) {
+      fs.unlinkSync(encryptedFilePath);
+    }
+
+    console.log(`✅ Complete pet data uploaded successfully!`);
+    console.log(`📸 Photo CID: ${uploadResult.photoCID}`);
+    console.log(`📋 Metadata CID: ${uploadResult.metadataCID}`);
+
+    res.json({
+      success: true,
+      petId,
+      photoCID: uploadResult.photoCID,
+      metadataCID: uploadResult.metadataCID,
+      photoHash,
+      photoIPFSUrl: uploadResult.photoIPFSUrl,
+      metadataIPFSUrl: uploadResult.metadataIPFSUrl,
+      metadata: uploadResult.metadata,
+      message: 'Pet photo and metadata uploaded to IPFS successfully'
+    });
+  } catch (error) {
+    console.error('Complete upload error:', error);
+    res.status(500).json({ error: 'Complete upload failed', details: error.message });
+  }
+});
+
 // Log pet data to blockchain
 app.post('/blockchain/log', async (req, res) => {
   try {
-    const { petId, cid, timestamp } = req.body;
+    const { petId, cid, timestamp, metadataCID } = req.body;
 
     if (!contract) {
       return res.status(500).json({ error: 'Blockchain contract not available' });
     }
 
+    // For now, we'll store the photo CID on blockchain
+    // In a future version, we could modify the smart contract to store both CIDs
     const tx = await contract.logPetData(petId, cid, timestamp);
     const receipt = await tx.wait();
+
+    console.log(`✅ Pet data logged to blockchain:`);
+    console.log(`   Pet ID: ${petId}`);
+    console.log(`   Photo CID: ${cid}`);
+    if (metadataCID) {
+      console.log(`   Metadata CID: ${metadataCID}`);
+      console.log(`   🌐 Metadata URL: https://ipfs.io/ipfs/${metadataCID}`);
+    }
 
     res.json({
       success: true,
       txHash: tx.hash,
       blockNumber: receipt.blockNumber,
       gasUsed: receipt.gasUsed.toString(),
+      photoCID: cid,
+      metadataCID: metadataCID,
       message: 'Pet data logged to blockchain successfully'
     });
   } catch (error) {

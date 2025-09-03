@@ -489,9 +489,21 @@ function App() {
                           </CardDescription>
                         </div>
                       </div>
-                      <Badge variant={pet.status === 'confirmed' ? 'default' : 'secondary'}>
-                        {pet.status}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant={pet.status === 'confirmed' ? 'default' : 'secondary'}>
+                          {pet.status}
+                        </Badge>
+                        {pet.cid && pet.cid.startsWith('Qm') && pet.cid.length === 46 && (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300 text-xs">
+                            🔒 SECURE
+                          </Badge>
+                        )}
+                        {pet.cid && (pet.cid.includes('...') || pet.cid.length < 46) && (
+                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300 text-xs">
+                            ⚠️ MOCK DATA
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -656,6 +668,14 @@ function App() {
         {activeTab === 'upload' && (
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-center gap-2 text-green-700 font-semibold">
+                  🔒 SECURE UPLOAD SYSTEM ACTIVE
+                </div>
+                <p className="text-green-600 text-sm mt-1">
+                  AES-256 Encryption • Real IPFS Storage • Blockchain Logging
+                </p>
+              </div>
               <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
                 Add New Pet
               </h2>

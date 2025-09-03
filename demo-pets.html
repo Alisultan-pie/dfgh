@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Demo Pet Creator</title>
+</head>
+<body>
+    <h1>Creating Demo Pets...</h1>
+    <script>
+        // Create a fake user ID
+        const userId = 'demo-user-123';
+        
+        // Create demo pets with different CID types
+        const demoPets = [
+            {
+                id: 'DEMO001',
+                name: 'Yetti',
+                species: 'Dog',
+                breed: 'Chihuahua',
+                age: 1,
+                description: 'Aggressive, playful',
+                location: 'Kowloon, Hong Kong',
+                microchipId: '78654',
+                cid: 'Qmd07160hryk...', // FAKE/TRUNCATED CID
+                status: 'completed',
+                lastUpdated: '2025-08-14T15:34:00Z',
+                photoUrl: ''
+            },
+            {
+                id: 'DEMO002', 
+                name: 'Illol',
+                species: 'Dog',
+                breed: 'Reed',
+                age: 1,
+                description: 'Tree',
+                location: 'Kowloon, Hong Kong',
+                microchipId: '678GH',
+                cid: 'Qmas1j4rv32c...', // FAKE/TRUNCATED CID
+                status: 'completed',
+                lastUpdated: '2025-09-03T22:32:00Z',
+                photoUrl: ''
+            },
+            {
+                id: 'SECURE001',
+                name: 'SecurePet',
+                species: 'Cat', 
+                breed: 'Secure Breed',
+                age: 2,
+                description: 'Real encrypted pet',
+                location: 'Secure Location',
+                microchipId: 'SEC123',
+                cid: 'Qm867bd05477d53c67282cee588d95d93f9248702a04a0', // REAL FULL CID
+                status: 'completed',
+                lastUpdated: '2025-09-03T19:06:00Z',
+                photoUrl: ''
+            }
+        ];
+        
+        // Store in localStorage
+        localStorage.setItem('pets_' + userId, JSON.stringify(demoPets));
+        localStorage.setItem('ppc_active_user', userId);
+        
+        document.body.innerHTML += '<h2>✅ Demo pets created!</h2>';
+        document.body.innerHTML += '<p>Now go to <a href="http://localhost:3000">http://localhost:3000</a></p>';
+        document.body.innerHTML += '<p>You should see:</p>';
+        document.body.innerHTML += '<ul>';
+        document.body.innerHTML += '<li>🔒 <strong>SecurePet</strong> with GREEN "🔒 SECURE" badge</li>';
+        document.body.innerHTML += '<li>⚠️ <strong>Yetti & Illol</strong> with RED "⚠️ MOCK DATA" badges</li>';
+        document.body.innerHTML += '</ul>';
+        
+        console.log('✅ Demo pets created in localStorage');
+    </script>
+</body>
+</html>

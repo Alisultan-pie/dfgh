@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from './ui/alert';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Search, CheckCircle, AlertTriangle, Shield, Hash, RefreshCw, Loader2, FileCheck } from 'lucide-react';
+import { Search, CheckCircle, AlertTriangle, Shield, Hash, RefreshCw, Loader2, FileCheck, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface VerificationResult {
@@ -461,7 +461,19 @@ export function DataVerification() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <code className="text-xs">{truncateHash(result.cid, 15)}</code>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs break-all max-w-xs">{result.cid}</code>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(result.cid);
+                              toast.success('CID copied to clipboard!');
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm">
                         {formatFileSize(result.fileSize)}
