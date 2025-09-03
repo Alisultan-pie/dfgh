@@ -1,0 +1,28 @@
+# Server Configuration
+PORT=3001
+ALLOWED_ORIGINS=https://your-frontend.app
+
+# IPFS Configuration (choose one path)
+# Storacha UCAN (recommended)
+UCAN_TOKEN=ucan:eyJ...
+
+# or Storacha Space+Proof
+W3UP_SPACE_DID=did:key:z...
+W3UP_PROOF={"iss":"did:...","aud":"did:...","exp":...}
+
+# or Web3.Storage (fallback provider)
+WEB3_STORAGE_TOKEN=eyJ...
+
+# Auth Configuration (if using JWT/Supabase)
+JWT_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+
+# Security Settings
+CORS_ENABLED=true
+RATE_LIMIT_WINDOW=900000
+RATE_LIMIT_MAX=100
+
+# Development Settings
+NODE_ENV=production
+LOG_LEVEL=info

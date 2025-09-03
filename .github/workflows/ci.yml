@@ -1,0 +1,95 @@
+name: CI - Secure Pet Biometric System
+on: [push, pull_request]
+
+jobs:
+  security-checks:
+    runs-on: ubuntu-latest
+    name: Security & Regression Tests
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with: 
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Check for fake CID patterns (regression test)
+        run: npm run cid:check
+        
+      - name: Validate configuration
+        run: |
+          node -e "
+          import { validateConfig } from './config/environment.js';
+          const errors = validateConfig();
+          if (errors.length > 0) {
+            console.error('❌ Configuration errors:', errors);
+            process.exit(1);
+          }
+          console.log('✅ Configuration validation passed');
+          "
+          
+      - name: Test CID validation utilities
+        run: |
+          node -e "
+          import { isValidCid } from './website/utils/cid.js';
+          const tests = [
+            ['QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG', true],
+            ['bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi', true],
+            ['invalid-cid', false],
+            ['Qm123', false]
+          ];
+          
+          let failed = 0;
+          tests.forEach(([cid, expected]) => {
+            const result = isValidCid(cid);
+            if (result !== expected) {
+              console.error(\`❌ CID validation failed for \${cid}: expected \${expected}, got \${result}\`);
+              failed++;
+            }
+          });
+          
+          if (failed > 0) {
+            console.error(\`❌ \${failed} CID validation tests failed\`);
+            process.exit(1);
+          }
+          console.log('✅ All CID validation tests passed');
+          "
+          
+      - name: Run standard tests (if present)
+        run: npm test --if-present
+        
+  build-test:
+    runs-on: ubuntu-latest
+    name: Build & Integration Tests
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with: 
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build website
+        run: |
+          cd website
+          npm ci
+          npm run build
+          
+      - name: Test server startup (demo mode)
+        run: |
+          timeout 10s node backend/demo-production-server.js &
+          sleep 5
+          curl -f http://localhost:3001/health || exit 1
+          echo "✅ Server startup test passed"

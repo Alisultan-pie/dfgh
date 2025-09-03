@@ -34,6 +34,9 @@ import { AuthModal } from './components/AuthModal';
 import { useAuth } from './components/AuthContext';
 import { PetUpload } from './components/PetUpload';
 import { apiClient } from './utils/supabase/client';
+import { isValidCid } from './utils/cid';
+import { dedupeByPetId } from './utils/dedupe';
+import { USE_MOCK } from './config';
 
 // no mock list; fetch after login
 
@@ -76,7 +79,7 @@ function App() {
       try {
         const response = await apiClient.getPets();
         const list = response.pets || [];
-        setPets(list.map((p: any, idx: number) => ({
+        const mappedPets = list.map((p: any, idx: number) => ({
           id: p.id || p.pet_id || `PET${String(idx + 1).padStart(3, '0')}`,
           name: p.name || p.pet_id || 'Pet',
           species: p.species || 'Unknown',
@@ -89,7 +92,15 @@ function App() {
           microchipId: p.microchipId || p.microchip_id || '',
           lastUpdated: p.updated_at || p.created_at || new Date().toISOString(),
           photoUrl: p.photoUrl || ''
-        })));
+        }));
+        
+        // Dedupe by petId/id and add IPFS status
+        const merged = dedupeByPetId(mappedPets.filter(Boolean));
+        const safe = merged.map((p: any) => ({
+          ...p,
+          ipfsStatus: isValidCid(p.cid) ? 'secure' : (p.cid ? 'invalid' : 'missing')
+        }));
+        setPets(safe);
       } catch {
         setPets([]);
       }
@@ -493,14 +504,24 @@ function App() {
                         <Badge variant={pet.status === 'confirmed' ? 'default' : 'secondary'}>
                           {pet.status}
                         </Badge>
-                        {pet.cid && pet.cid.startsWith('Qm') && pet.cid.length === 46 && (
+                        {(pet as any).ipfsStatus === 'secure' && (
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300 text-xs">
                             🔒 SECURE
                           </Badge>
                         )}
-                        {pet.cid && (pet.cid.includes('...') || pet.cid.length < 46) && (
+                        {(pet as any).ipfsStatus === 'invalid' && (
                           <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300 text-xs">
-                            ⚠️ MOCK DATA
+                            ⚠️ INVALID CID
+                          </Badge>
+                        )}
+                        {(pet as any).ipfsStatus === 'missing' && (
+                          <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-300 text-xs">
+                            📝 NOT UPLOADED
+                          </Badge>
+                        )}
+                        {USE_MOCK && (
+                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300 text-xs">
+                            🧪 MOCK DATA
                           </Badge>
                         )}
                       </div>
