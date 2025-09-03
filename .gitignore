@@ -16,8 +16,14 @@ coverage/
 .env.production
 .env.test
 
-# uploads
+# uploads & plaintext artifacts (SECURITY CRITICAL)
 uploads/
+encrypted/
+tmp/
+*.bin
+*_keys.txt
+*_encrypted.*
+downloaded_*
 
 # OS files
 .DS_Store

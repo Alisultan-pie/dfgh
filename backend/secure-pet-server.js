@@ -31,10 +31,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configure multer for file uploads
-const upload = multer({
-  dest: 'uploads/',
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+// Configure multer for memory-only uploads (no disk storage)
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow image files
+    if (!/^image\/(png|jpeg|webp)$/.test(file.mimetype)) {
+      return cb(new Error('Invalid file type. Only PNG, JPEG, and WebP images are allowed.'));
+    }
+    cb(null, true);
+  }
 });
 
 // Ensure required directories exist
@@ -115,38 +124,23 @@ async function initializeIPFS() {
   }
 }
 
-// Secure IPFS upload function
-async function secureUploadToIPFS(filePath, filename) {
+// Secure IPFS upload function - REAL IPFS ONLY
+async function secureUploadToIPFS(fileBuffer, filename) {
+  if (!isIPFSReady || !ipfsClient) {
+    throw new Error('IPFS client not configured. Set W3UP_SPACE_DID and W3UP_PROOF environment variables.');
+  }
+
   try {
-    if (isIPFSReady && ipfsClient) {
-      // Real IPFS upload using Storacha
-      console.log('📤 Uploading to real IPFS network...');
-      const fileData = fs.readFileSync(filePath);
-      const file = new File([fileData], filename);
-      
-      const cid = await ipfsClient.uploadFile(file);
-      console.log('✅ Real IPFS upload successful:', cid);
-      return cid;
-      
-    } else {
-      // Fallback: Generate content-based CID (deterministic based on file content)
-      console.log('📸 Generating content-based CID (fallback mode)...');
-      const fileData = fs.readFileSync(filePath);
-      const hash = crypto.createHash('sha256').update(fileData).digest('hex');
-      const cid = 'Qm' + hash.substring(0, 44); // Create valid 46-char CID
-      
-      console.log('📸 Generated content-based CID:', cid);
-      return cid;
-    }
+    console.log('📤 Uploading to IPFS network...');
+    const file = new File([fileBuffer], filename);
+    
+    const cid = await ipfsClient.uploadFile(file);
+    console.log('✅ IPFS upload successful:', cid);
+    return cid;
+    
   } catch (error) {
     console.error('❌ IPFS upload failed:', error.message);
-    
-    // Fallback to content-based CID on error
-    console.log('🔄 Falling back to content-based CID...');
-    const fileData = fs.readFileSync(filePath);
-    const hash = crypto.createHash('sha256').update(fileData).digest('hex');
-    const cid = 'Qm' + hash.substring(0, 44);
-    return cid;
+    throw new Error(`IPFS upload failed: ${error.message}`);
   }
 }
 
