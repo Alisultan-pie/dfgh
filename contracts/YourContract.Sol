@@ -1,0 +1,11 @@
+// contracts/PetBiometricRegistry.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+contract PetBiometricRegistry {
+    event PetLogged(string petId, string photoCID, string metadataCID);
+
+    function logPetData(string calldata petId, string calldata photoCID, string calldata metadataCID) external {
+        emit PetLogged(petId, photoCID, metadataCID);
+    }
+}
