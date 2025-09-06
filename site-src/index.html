@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🐾 Ali's Pet Biometric Identity System — IPFS Files</title>
+  <style>
+    :root{--bg:#0f1220;--card:#171a2b;--text:#e6e6f0;--muted:#aab;--accent:#70d7ff;--success:#4ade80;--warning:#fbbf24;}
+    *{box-sizing:border-box} 
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    header{padding:32px 20px;border-bottom:1px solid #23263a;background:linear-gradient(180deg,#14182b,#0f1220);text-align:center}
+    h1{margin:0;font-size:28px;color:var(--success)} 
+    .subtitle{color:var(--muted);margin-top:8px;font-size:14px}
+    main{max-width:1000px;margin:24px auto;padding:0 16px}
+    .card{background:var(--card);border:1px solid #23263a;border-radius:16px;padding:24px;margin-bottom:20px}
+    .badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-right:8px}
+    .badge.success{background:var(--success);color:#000}
+    .badge.info{background:var(--accent);color:#000}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px dashed #2a2e44}
+    .row:last-child{border-bottom:0}
+    .row:hover{background:rgba(112,215,255,0.05);margin:0 -12px;padding:12px}
+    a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+    .path{color:var(--muted);font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:13px}
+    .note{color:#9aa;line-height:1.4}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+    .stat{background:var(--card);border:1px solid #23263a;border-radius:12px;padding:16px;text-align:center}
+    .stat-value{font-size:24px;font-weight:700;color:var(--success)}
+    .stat-label{font-size:12px;color:var(--muted);margin-top:4px}
+    .file-icon{margin-right:8px;opacity:0.7}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🐾 Pet Biometric Identity System</h1>
+    <div class="subtitle">Decentralized • Encrypted • Blockchain-Verified</div>
+    <div style="margin-top:16px">
+      <span class="badge success">✅ Real IPFS</span>
+      <span class="badge info">🔒 AES-256-GCM</span>
+      <span class="badge info">⛓️ Polygon Blockchain</span>
+    </div>
+  </header>
+  
+  <main>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value" id="fileCount">0</div>
+        <div class="stat-label">Encrypted Files</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="totalSize">0 KB</div>
+        <div class="stat-label">Total Size</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">100%</div>
+        <div class="stat-label">Decentralized</div>
+      </div>
+    </div>
+
+    <section class="card">
+      <h2 style="margin-top:0;color:var(--accent)">📁 Encrypted Pet Biometric Files</h2>
+      <div class="note" style="margin-bottom:20px">
+        <strong>For Manager:</strong> These files are stored on the decentralized IPFS network. 
+        Each file is encrypted with AES-256-GCM before upload. Click any file to download and verify 
+        the system is working with real IPFS storage.
+      </div>
+
+      <div id="files">
+        <!-- Files will be populated by script -->
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 style="margin-top:0;color:var(--accent)">🔗 System Architecture</h2>
+      <div class="note">
+        <p><strong>Smart Contract:</strong> <a href="https://amoy.polygonscan.com/address/0x22Be8Bffc52FDC8037CA237Ea19D0D62f1dC47ce" target="_blank">0x22Be8Bffc52FDC8037CA237Ea19D0D62f1dC47ce</a></p>
+        <p><strong>Network:</strong> Polygon Amoy Testnet</p>
+        <p><strong>IPFS Storage:</strong> Storacha (Enterprise IPFS)</p>
+        <p><strong>Encryption:</strong> AES-256-GCM (Military Grade)</p>
+        <p><strong>Access:</strong> Multiple IPFS gateways worldwide</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 style="margin-top:0;color:var(--accent)">🌐 Gateway Access</h2>
+      <div class="note">
+        <p>This website and all files are accessible from multiple IPFS gateways:</p>
+        <ul>
+          <li><strong>Primary:</strong> <code>https://ipfs.io/ipfs/&lt;CID&gt;/</code></li>
+          <li><strong>Dweb:</strong> <code>https://dweb.link/ipfs/&lt;CID&gt;/</code></li>
+          <li><strong>CloudFlare:</strong> <code>https://cloudflare-ipfs.com/ipfs/&lt;CID&gt;/</code></li>
+        </ul>
+        <p><em>Replace &lt;CID&gt; with this page's content identifier from the URL.</em></p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // File list populated by generator script
+    const fileList = [
+      { path: 'encrypted/nose_encrypted.jpg', size: 169152, displaySize: '165.2 KB' },
+      { path: 'encrypted/pet_1756926048309_unknown_encrypted.bin', size: 150302, displaySize: '146.8 KB' },
+      { path: 'encrypted/pet_1756926048309_unknown_keys.txt', size: 234, displaySize: '234 B' },
+      { path: 'encrypted/pet_1756926417660_unknown_encrypted.bin', size: 150302, displaySize: '146.8 KB' },
+      { path: 'encrypted/pet_1756926417660_unknown_keys.txt', size: 234, displaySize: '234 B' },
+      { path: 'encrypted/secure_pet_1756923674730_encrypted.bin', size: 150302, displaySize: '146.8 KB' },
+      { path: 'encrypted/secure_pet_1756923674730_keys.txt', size: 234, displaySize: '234 B' }
+    ];
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      const kb = bytes / 1024;
+      if (kb < 1024) return kb.toFixed(1) + ' KB';
+      return (kb / 1024).toFixed(2) + ' MB';
+    }
+
+    function getFileIcon(filename) {
+      if (filename.includes('_keys.txt')) return '🔑';
+      if (filename.includes('_encrypted.bin')) return '🔒';
+      if (filename.includes('.json')) return '📄';
+      return '📁';
+    }
+
+    function populateFiles() {
+      const container = document.getElementById('files');
+      
+      if (fileList.length === 0) {
+        container.innerHTML = `
+          <div class="row">
+            <div>
+              <span class="file-icon">📝</span>
+              <strong>Files will be populated by generator script</strong>
+            </div>
+            <div class="path">Run: node scripts/generate-index.mjs</div>
+          </div>
+        `;
+        return;
+      }
+
+      let totalSize = 0;
+      let html = '';
+
+      fileList.forEach(file => {
+        const sizeBytes = parseInt(file.size) || 0;
+        totalSize += sizeBytes;
+        
+        html += `
+          <div class="row">
+            <div>
+              <span class="file-icon">${getFileIcon(file.path)}</span>
+              <a href="${file.path}" target="_blank">${file.path}</a>
+            </div>
+            <div class="path">${file.displaySize || file.size}</div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+      
+      // Update stats
+      document.getElementById('fileCount').textContent = fileList.length;
+      document.getElementById('totalSize').textContent = formatSize(totalSize);
+    }
+
+    // Initialize
+    populateFiles();
+  </script>
+</body>
+</html>
